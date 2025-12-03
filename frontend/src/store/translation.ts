@@ -9,6 +9,9 @@ import {
   InstantTranslationResult,
 } from '@/types';
 
+export type Theme = 'light' | 'dark' | 'system';
+export type AIProvider = 'gemini' | 'claude' | 'openai';
+
 interface TranslationState {
   // 当前文档状态
   currentDocument: TranslationDocument | null;
@@ -42,6 +45,12 @@ interface TranslationState {
   // 术语库
   customGlossary: GlossaryTerm[];
 
+  // 设置
+  theme: Theme;
+  aiProvider: AIProvider;
+  autoDetectLanguage: boolean;
+  saveHistory: boolean;
+
   // 操作方法
   setCurrentDocument: (doc: TranslationDocument | null) => void;
   setIsLoadingDocument: (loading: boolean) => void;
@@ -65,6 +74,12 @@ interface TranslationState {
   setIsQuickTranslating: (loading: boolean) => void;
   setLastQuickResult: (result: InstantTranslationResult | null) => void;
   resetQuickState: () => void;
+
+  // 设置方法
+  setTheme: (theme: Theme) => void;
+  setAIProvider: (provider: AIProvider) => void;
+  setAutoDetectLanguage: (auto: boolean) => void;
+  setSaveHistory: (save: boolean) => void;
 
   reset: () => void;
 }
@@ -90,6 +105,11 @@ const initialState = {
   currentUser: null,
   isAuthenticated: false,
   customGlossary: [],
+  // 设置默认值
+  theme: 'system' as Theme,
+  aiProvider: 'gemini' as AIProvider,
+  autoDetectLanguage: true,
+  saveHistory: true,
 };
 
 export const useTranslationStore = create<TranslationState>()(
@@ -147,6 +167,12 @@ export const useTranslationStore = create<TranslationState>()(
             lastQuickResult: null,
           }),
 
+        // 设置方法
+        setTheme: (theme) => set({ theme }),
+        setAIProvider: (provider) => set({ aiProvider: provider }),
+        setAutoDetectLanguage: (auto) => set({ autoDetectLanguage: auto }),
+        setSaveHistory: (save) => set({ saveHistory: save }),
+
         reset: () => set(initialState),
       }),
       {
@@ -157,6 +183,11 @@ export const useTranslationStore = create<TranslationState>()(
           viewMode: state.viewMode,
           quickSourceLanguage: state.quickSourceLanguage,
           quickTargetLanguage: state.quickTargetLanguage,
+          // 持久化设置
+          theme: state.theme,
+          aiProvider: state.aiProvider,
+          autoDetectLanguage: state.autoDetectLanguage,
+          saveHistory: state.saveHistory,
         }),
       }
     )

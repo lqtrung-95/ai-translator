@@ -151,6 +151,19 @@ export class ApiClient {
     return this.client.post('/glossary/custom', data);
   }
 
+  async addGlossaryTerm(data: {
+    english: string;
+    chinese: string;
+    category: string;
+    explanation?: string;
+  }) {
+    return this.client.post('/glossary', data);
+  }
+
+  async deleteGlossaryTerm(id: string) {
+    return this.client.delete(`/glossary/${id}`);
+  }
+
   // 用户 API
   async getCurrentUser() {
     return this.client.get('/users/me');

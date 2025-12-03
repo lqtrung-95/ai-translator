@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Upload, Link2, Loader2, FileText } from 'lucide-react';
+import { Upload, Link2, Loader2, FileText, Cloud, Shield, Zap } from 'lucide-react';
 import { useTranslationStore } from '@/store/translation';
 
 interface HomePageProps {
@@ -53,213 +53,184 @@ export const HomePage: React.FC<HomePageProps> = ({ onTranslationStart, isLoadin
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      {/* 导航栏 */}
-      <nav className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-white">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-sm">AI</span>
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900">文档翻译</h1>
-        </div>
-        <div className="flex items-center gap-4">
-          <button className="text-gray-600 hover:text-gray-900">文档</button>
-          <button className="text-gray-600 hover:text-gray-900">历史</button>
-          <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-            登录
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="text-center space-y-3">
+        <h2 className="text-2xl sm:text-3xl font-semibold text-slate-900 tracking-tight">
+          文档翻译
+        </h2>
+        <p className="text-slate-500 text-sm sm:text-base max-w-lg mx-auto">
+          输入云服务文档 URL 或上传文件，AI 将自动解析并翻译
+        </p>
+      </div>
+
+      {/* Input Card */}
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        {/* Tabs */}
+        <div className="flex border-b border-slate-200">
+          <button
+            onClick={() => setActiveTab('url')}
+            className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 text-sm font-medium transition-all duration-200 cursor-pointer ${
+              activeTab === 'url'
+                ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50'
+                : 'text-slate-600 hover:text-slate-800 hover:bg-slate-50'
+            }`}
+          >
+            <Link2 size={18} />
+            输入 URL
+          </button>
+          <button
+            onClick={() => setActiveTab('file')}
+            className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 text-sm font-medium transition-all duration-200 cursor-pointer ${
+              activeTab === 'file'
+                ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50'
+                : 'text-slate-600 hover:text-slate-800 hover:bg-slate-50'
+            }`}
+          >
+            <Upload size={18} />
+            上传文件
           </button>
         </div>
-      </nav>
 
-      {/* 主体内容 */}
-      <div className="max-w-4xl mx-auto px-4 py-20">
-        {/* 标题 */}
-        <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold text-gray-900 mb-4">
-            专业的云文档 AI 翻译
-          </h2>
-          <p className="text-xl text-gray-600 mb-2">
-            快速准确地翻译 AWS、GCP、Azure 等云服务官方文档
-          </p>
-          <p className="text-gray-500">支持自动术语识别、代码块保留、格式完整</p>
-        </div>
-
-        {/* 输入卡片 */}
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 mb-8">
-          {/* 标签页 */}
-          <div className="flex gap-4 mb-8 border-b border-gray-200">
-            <button
-              onClick={() => setActiveTab('url')}
-              className={`px-4 py-3 font-semibold transition ${
-                activeTab === 'url'
-                  ? 'border-b-2 border-blue-600 text-blue-600'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <Link2 size={18} />
-                输入 URL
+        {/* Content */}
+        <div className="p-6 sm:p-8">
+          {activeTab === 'url' ? (
+            <form onSubmit={handleUrlSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  文档链接
+                </label>
+                <input
+                  type="url"
+                  value={inputUrl}
+                  onChange={(e) => setInputUrl(e.target.value)}
+                  placeholder="https://docs.aws.amazon.com/..."
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                />
+                <p className="mt-2 text-xs text-slate-500">
+                  支持 AWS、GCP、Azure、Kubernetes 等云服务官方文档
+                </p>
               </div>
-            </button>
-            <button
-              onClick={() => setActiveTab('file')}
-              className={`px-4 py-3 font-semibold transition ${
-                activeTab === 'file'
-                  ? 'border-b-2 border-blue-600 text-blue-600'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <Upload size={18} />
-                上传文件
-              </div>
-            </button>
-          </div>
 
-          {/* URL 输入 */}
-          {activeTab === 'url' && (
-            <form onSubmit={handleUrlSubmit}>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    文档链接
-                  </label>
+              <button
+                type="submit"
+                disabled={isLoading || !inputUrl.trim()}
+                className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white rounded-xl font-medium transition-all duration-200 cursor-pointer disabled:cursor-not-allowed"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 size={18} className="animate-spin" />
+                    解析中...
+                  </>
+                ) : (
+                  '开始翻译'
+                )}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleFileSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  选择文件
+                </label>
+                <label
+                  htmlFor="file-input"
+                  className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-slate-200 rounded-xl hover:border-blue-400 hover:bg-blue-50/50 cursor-pointer transition-all duration-200"
+                >
                   <input
-                    type="url"
-                    value={inputUrl}
-                    onChange={(e) => setInputUrl(e.target.value)}
-                    placeholder="例: https://docs.aws.amazon.com/..."
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    type="file"
+                    onChange={handleFileSelect}
+                    accept=".pdf,.html,.md,.markdown,.docx"
+                    className="hidden"
+                    id="file-input"
                   />
-                  <p className="mt-2 text-sm text-gray-500">
-                    支持 AWS、GCP、Azure 等云厂商的官方文档链接
+                  <FileText size={32} className="text-slate-400 mb-3" />
+                  <p className="text-sm font-medium text-slate-700">
+                    {selectedFile ? selectedFile.name : '点击或拖动文件到此'}
                   </p>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 size={18} className="animate-spin" />
-                      处理中...
-                    </>
-                  ) : (
-                    '开始翻译'
-                  )}
-                </button>
+                  <p className="text-xs text-slate-500 mt-1">
+                    支持 PDF, HTML, Markdown, Word
+                  </p>
+                </label>
               </div>
+
+              <button
+                type="submit"
+                disabled={isLoading || !selectedFile}
+                className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white rounded-xl font-medium transition-all duration-200 cursor-pointer disabled:cursor-not-allowed"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 size={18} className="animate-spin" />
+                    处理中...
+                  </>
+                ) : (
+                  '开始翻译'
+                )}
+              </button>
             </form>
           )}
+        </div>
 
-          {/* 文件上传 */}
-          {activeTab === 'file' && (
-            <form onSubmit={handleFileSubmit}>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    选择文件
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="file"
-                      onChange={handleFileSelect}
-                      accept=".pdf,.html,.md,.markdown,.docx"
-                      className="hidden"
-                      id="file-input"
-                    />
-                    <label
-                      htmlFor="file-input"
-                      className="flex items-center justify-center w-full px-4 py-8 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 cursor-pointer bg-gray-50 hover:bg-blue-50 transition"
-                    >
-                      <div className="text-center">
-                        <FileText size={32} className="mx-auto mb-2 text-gray-400" />
-                        <p className="text-sm font-medium text-gray-700">
-                          {selectedFile ? selectedFile.name : '点击或拖动文件到此'}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          支持 PDF, HTML, Markdown, Word 格式
-                        </p>
-                      </div>
-                    </label>
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isLoading || !selectedFile}
-                  className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 size={18} className="animate-spin" />
-                      处理中...
-                    </>
-                  ) : (
-                    '开始翻译'
-                  )}
-                </button>
-              </div>
-            </form>
-          )}
-
-          {/* 翻译选项 */}
-          <div className="mt-8 pt-8 border-t border-gray-200">
-            <p className="text-sm font-medium text-gray-700 mb-4">翻译模式</p>
-            <div className="grid grid-cols-3 gap-4">
-              <ModeOption
-                title="专业精确"
-                description="适合技术文档翻译"
-                selected={translationMode === 'professional'}
-                onClick={() => setTranslationMode('professional')}
-              />
-              <ModeOption
-                title="通俗解释"
-                description="适合初学者理解"
-                selected={translationMode === 'casual'}
-                onClick={() => setTranslationMode('casual')}
-              />
-              <ModeOption
-                title="总结模式"
-                description="提取关键要点"
-                selected={translationMode === 'summary'}
-                onClick={() => setTranslationMode('summary')}
-              />
-            </div>
+        {/* Mode Selector */}
+        <div className="px-6 sm:px-8 pb-6 sm:pb-8 pt-2 border-t border-slate-100">
+          <p className="text-sm font-medium text-slate-700 mb-3">翻译模式</p>
+          <div className="grid grid-cols-3 gap-3">
+            <ModeOption
+              title="专业精确"
+              description="技术文档"
+              selected={translationMode === 'professional'}
+              onClick={() => setTranslationMode('professional')}
+            />
+            <ModeOption
+              title="通俗解释"
+              description="初学者"
+              selected={translationMode === 'casual'}
+              onClick={() => setTranslationMode('casual')}
+            />
+            <ModeOption
+              title="总结模式"
+              description="关键要点"
+              selected={translationMode === 'summary'}
+              onClick={() => setTranslationMode('summary')}
+            />
           </div>
         </div>
+      </div>
 
-        {/* 功能特性 */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[
-            {
-              icon: '⚡',
-              title: '快速解析',
-              desc: '10秒内自动提取文档结构和内容',
-            },
-            {
-              icon: '🎯',
-              title: '精准翻译',
-              description: '云行业专属术语库，准确率 >90%',
-            },
-            {
-              icon: '🔒',
-              title: '隐私保护',
-              desc: '文档永不存储，加密传输',
-            },
-          ].map((feature, idx) => (
-            <div
-              key={idx}
-              className="bg-white rounded-xl p-6 border border-gray-100 hover:shadow-lg transition"
-            >
-              <div className="text-3xl mb-3">{feature.icon}</div>
-              <h3 className="font-semibold text-gray-900 mb-2">{feature.title}</h3>
-              <p className="text-sm text-gray-600">{feature.desc}</p>
+      {/* Features */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {[
+          {
+            icon: Zap,
+            title: '快速解析',
+            desc: '10秒内自动提取文档结构',
+            color: 'amber',
+          },
+          {
+            icon: Cloud,
+            title: '云术语库',
+            desc: '内置 AWS/GCP/Azure 专业术语',
+            color: 'blue',
+          },
+          {
+            icon: Shield,
+            title: '隐私安全',
+            desc: '文档加密传输，不存储内容',
+            color: 'green',
+          },
+        ].map((feature, idx) => (
+          <div
+            key={idx}
+            className="bg-white rounded-xl p-5 border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all duration-200"
+          >
+            <div className={`w-10 h-10 rounded-xl bg-${feature.color}-100 flex items-center justify-center mb-4`}>
+              <feature.icon size={20} className={`text-${feature.color}-600`} />
             </div>
-          ))}
-        </div>
+            <h3 className="font-medium text-slate-900 mb-1">{feature.title}</h3>
+            <p className="text-sm text-slate-500">{feature.desc}</p>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -275,13 +246,15 @@ interface ModeOptionProps {
 const ModeOption: React.FC<ModeOptionProps> = ({ title, description, selected, onClick }) => (
   <button
     onClick={onClick}
-    className={`p-4 rounded-lg border-2 transition text-left ${
+    className={`p-3 rounded-xl border-2 transition-all duration-200 text-left cursor-pointer ${
       selected
         ? 'border-blue-500 bg-blue-50'
-        : 'border-gray-200 bg-white hover:border-gray-300'
+        : 'border-slate-200 bg-white hover:border-slate-300'
     }`}
   >
-    <p className="font-semibold text-gray-900">{title}</p>
-    <p className="text-xs text-gray-600 mt-1">{description}</p>
+    <p className={`font-medium text-sm ${selected ? 'text-blue-700' : 'text-slate-900'}`}>
+      {title}
+    </p>
+    <p className="text-xs text-slate-500 mt-0.5">{description}</p>
   </button>
 );

@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { BookOpen, MessageCircle, Settings } from 'lucide-react';
+import { BookOpen, MessageCircle, Settings, Languages, FileText, ArrowLeft, Sparkles } from 'lucide-react';
 import { InstantTranslator } from '@/components/InstantTranslator';
 import { HomePage } from '@/components/HomePage';
 import { DualEditor } from '@/components/DualEditor';
 import { AIAssistant } from '@/components/AIAssistant';
 import { GlossaryPanel } from '@/components/GlossaryPanel';
+import { SettingsModal, applyTheme } from '@/components/SettingsModal';
 import { useTranslationStore } from '@/store/translation';
 import { TranslationDocument, Paragraph } from '@/types';
 
@@ -14,9 +15,9 @@ type AppState = 'instant' | 'editor' | 'document';
 
 export default function Home() {
   const [appState, setAppState] = useState<AppState>('instant');
-  const isDocumentMode = appState === 'document' || appState === 'editor';
   const [isLoadingDocument, setIsLoadingDocument] = useState(false);
   const [documentError, setDocumentError] = useState<string | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
 
   const {
     currentDocument,
@@ -25,18 +26,21 @@ export default function Home() {
     setShowAIAssistant,
     showGlossary,
     setShowGlossary,
+    theme,
   } = useTranslationStore();
 
-  // 模拟文档处理流程
+  // Apply theme on initial load
+  useEffect(() => {
+    applyTheme(theme);
+  }, [theme]);
+
   const handleTranslationStart = async (data: { type: 'url' | 'file'; content: string }) => {
     setIsLoadingDocument(true);
     setDocumentError(null);
 
     try {
-      // 模拟 API 调用延迟
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
-      // 生成模拟文档
       const mockDocument: TranslationDocument = {
         id: Date.now().toString(),
         title: `${data.type === 'url' ? 'URL' : 'File'} - ${data.content}`,
@@ -78,152 +82,188 @@ export default function Home() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-100">
-      {/* 主要内容 */}
-      <div className="flex-1 flex flex-col">
-        {appState === 'instant' ? (
-          <div className="p-8 overflow-auto">
-            <div className="max-w-5xl mx-auto">
-              <div className="mb-6 flex items-center justify-between">
-                <nav className="flex gap-4">
-                  <button
-                    className={`px-4 py-2 rounded-full text-sm font-semibold ${
-                      appState === 'instant'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100 text-gray-600'
-                    }`}
-                    onClick={() => setAppState('instant')}
-                  >
-                    即时翻译
-                  </button>
-                  <button
-                    className={`px-4 py-2 rounded-full text-sm font-semibold ${
-                      isDocumentMode ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
-                    }`}
-                    onClick={() => setAppState('document')}
-                  >
-                    文档翻译
-                  </button>
-                </nav>
-
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => setShowGlossary(!showGlossary)}
-                    className={`p-2 rounded-lg transition ${
-                      showGlossary
-                        ? 'bg-blue-100 text-blue-600'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                    title="术语库"
-                  >
-                    <BookOpen size={20} />
-                  </button>
-
-                  <button
-                    onClick={() => setShowAIAssistant(!showAIAssistant)}
-                    className={`p-2 rounded-lg transition ${
-                      showAIAssistant
-                        ? 'bg-blue-100 text-blue-600'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                    title="AI 助手"
-                  >
-                    <MessageCircle size={20} />
-                  </button>
-                </div>
-              </div>
-              {appState === 'instant' ? (
-                <InstantTranslator />
-              ) : appState === 'document' ? (
-                <HomePage onTranslationStart={handleTranslationStart} isLoading={isLoadingDocument} />
-              ) : null}
-            </div>
-          </div>
-        ) : (
-          <>
-            {/* 编辑器顶部栏 */}
-            <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200">
-              <div className="flex items-center gap-4">
+    <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)] transition-colors duration-200">
+      {/* Header */}
+      <header className="sticky top-0 z-50 bg-[var(--surface)]/80 backdrop-blur-xl border-b border-[var(--border)]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo */}
+            <div className="flex items-center gap-3">
+              {appState === 'editor' ? (
                 <button
                   onClick={() => {
                     setCurrentDocument(null);
-                    setAppState('document');
+                    setAppState('instant');
                   }}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-900 font-semibold flex items-center gap-2"
+                  className="flex items-center gap-2 text-[var(--muted)] hover:text-[var(--foreground)] transition-colors cursor-pointer"
                 >
-                  ← 返回
+                  <ArrowLeft size={20} />
+                  <span className="font-medium">返回</span>
                 </button>
-                <h1 className="text-xl font-bold text-gray-900 truncate">
-                  {currentDocument?.title || '文档'}
-                </h1>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setShowGlossary(!showGlossary)}
-                  className={`p-2 rounded-lg transition ${
-                    showGlossary
-                      ? 'bg-blue-100 text-blue-600'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                  title="术语库"
-                >
-                  <BookOpen size={20} />
-                </button>
-
-                <button
-                  onClick={() => setShowAIAssistant(!showAIAssistant)}
-                  className={`p-2 rounded-lg transition ${
-                    showAIAssistant
-                      ? 'bg-blue-100 text-blue-600'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                  title="AI 助手"
-                >
-                  <MessageCircle size={20} />
-                </button>
-
-                <button
-                  className="p-2 bg-gray-100 text-gray-600 hover:bg-gray-200 rounded-lg transition"
-                  title="设置"
-                >
-                  <Settings size={20} />
-                </button>
-              </div>
+              ) : (
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/25">
+                    <Languages size={20} className="text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-lg font-semibold text-[var(--foreground)] tracking-tight">CloudTranslate</h1>
+                    <p className="text-[10px] text-[var(--muted)] -mt-0.5">AI-Powered Documentation</p>
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* 编辑器内容 */}
-            <div className="flex-1 overflow-hidden">
+            {/* Navigation Tabs */}
+            {appState !== 'editor' && (
+              <nav className="hidden sm:flex items-center bg-[var(--background)] rounded-full p-1">
+                <button
+                  onClick={() => setAppState('instant')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 cursor-pointer ${
+                    appState === 'instant'
+                      ? 'bg-[var(--surface)] text-[var(--foreground)] shadow-sm'
+                      : 'text-[var(--muted)] hover:text-[var(--foreground)]'
+                  }`}
+                >
+                  <Sparkles size={16} />
+                  即时翻译
+                </button>
+                <button
+                  onClick={() => setAppState('document')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 cursor-pointer ${
+                    appState === 'document'
+                      ? 'bg-[var(--surface)] text-[var(--foreground)] shadow-sm'
+                      : 'text-[var(--muted)] hover:text-[var(--foreground)]'
+                  }`}
+                >
+                  <FileText size={16} />
+                  文档翻译
+                </button>
+              </nav>
+            )}
+
+            {/* Editor Title */}
+            {appState === 'editor' && currentDocument && (
+              <h2 className="text-sm font-medium text-[var(--muted)] truncate max-w-md">
+                {currentDocument.title}
+              </h2>
+            )}
+
+            {/* Actions */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowGlossary(!showGlossary)}
+                className={`p-2.5 rounded-xl transition-all duration-200 cursor-pointer ${
+                  showGlossary
+                    ? 'bg-blue-500/10 text-blue-600'
+                    : 'text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--background)]'
+                }`}
+                title="术语库"
+              >
+                <BookOpen size={20} />
+              </button>
+              <button
+                onClick={() => setShowAIAssistant(!showAIAssistant)}
+                className={`p-2.5 rounded-xl transition-all duration-200 cursor-pointer ${
+                  showAIAssistant
+                    ? 'bg-blue-500/10 text-blue-600'
+                    : 'text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--background)]'
+                }`}
+                title="AI 助手"
+              >
+                <MessageCircle size={20} />
+              </button>
+              <button
+                onClick={() => setShowSettings(true)}
+                className="p-2.5 rounded-xl text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--background)] transition-all duration-200 cursor-pointer"
+                title="设置"
+              >
+                <Settings size={20} />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Navigation */}
+        {appState !== 'editor' && (
+          <div className="sm:hidden border-t border-[var(--border)] px-4 py-2">
+            <nav className="flex items-center bg-[var(--background)] rounded-full p-1">
+              <button
+                onClick={() => setAppState('instant')}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 cursor-pointer ${
+                  appState === 'instant'
+                    ? 'bg-[var(--surface)] text-[var(--foreground)] shadow-sm'
+                    : 'text-[var(--muted)]'
+                }`}
+              >
+                <Sparkles size={16} />
+                即时翻译
+              </button>
+              <button
+                onClick={() => setAppState('document')}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 cursor-pointer ${
+                  appState === 'document'
+                    ? 'bg-[var(--surface)] text-[var(--foreground)] shadow-sm'
+                    : 'text-[var(--muted)]'
+                }`}
+              >
+                <FileText size={16} />
+                文档翻译
+              </button>
+            </nav>
+          </div>
+        )}
+      </header>
+
+      {/* Main Content */}
+      <main className="flex">
+        <div className="flex-1">
+          {appState === 'editor' ? (
+            <div className="h-[calc(100vh-64px)]">
               {currentDocument ? (
                 <DualEditor
                   paragraphs={currentDocument.paragraphs}
                   onParagraphUpdate={handleParagraphUpdate}
                 />
               ) : (
-                <div className="h-full flex items-center justify-center text-gray-500">
-                  加载中...
+                <div className="h-full flex items-center justify-center">
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                    <p className="text-slate-500 text-sm">加载中...</p>
+                  </div>
                 </div>
               )}
             </div>
-          </>
-        )}
-      </div>
+          ) : (
+            <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+              {appState === 'instant' ? (
+                <InstantTranslator />
+              ) : (
+                <HomePage onTranslationStart={handleTranslationStart} isLoading={isLoadingDocument} />
+              )}
+            </div>
+          )}
+        </div>
 
-      {/* 右侧面板 */}
-      <AIAssistant
-        isOpen={showAIAssistant}
-        onClose={() => setShowAIAssistant(false)}
-      />
+        {/* Side Panels */}
+        <AIAssistant
+          isOpen={showAIAssistant}
+          onClose={() => setShowAIAssistant(false)}
+        />
+        <GlossaryPanel
+          isOpen={showGlossary}
+          onClose={() => setShowGlossary(false)}
+        />
+      </main>
 
-      <GlossaryPanel
-        isOpen={showGlossary}
-        onClose={() => setShowGlossary(false)}
+      {/* Settings Modal */}
+      <SettingsModal
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
       />
     </div>
   );
 }
 
-// 生成模拟段落数据
 function generateMockParagraphs(): Paragraph[] {
   return [
     {
@@ -231,8 +271,7 @@ function generateMockParagraphs(): Paragraph[] {
       order: 1,
       type: 'heading',
       original: 'Introduction to AWS VPC',
-      translated:
-        'AWS VPC 简介',
+      translated: 'AWS VPC 简介',
       translationStatus: 'completed',
       glossaryTerms: [
         {
@@ -274,8 +313,7 @@ function generateMockParagraphs(): Paragraph[] {
   "CidrBlock": "10.0.0.0/16",
   "IsDefault": false
 }`,
-      translated:
-        '{...} (代码块无需翻译)',
+      translated: '{...} (代码块无需翻译)',
       translationStatus: 'completed',
       glossaryTerms: [],
     },
