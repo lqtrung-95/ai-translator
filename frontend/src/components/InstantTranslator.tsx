@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo } from 'react';
-import { Loader2, ArrowLeftRight, Copy, Check, ChevronDown } from 'lucide-react';
+import { Loader2, ArrowLeftRight, Copy, Check, ChevronDown, BookMarked, Code2, Brain } from 'lucide-react';
 import { useTranslationStore } from '@/store/translation';
 import { apiClient } from '@/api/client';
 import { useState } from 'react';
@@ -254,22 +254,27 @@ export const InstantTranslator = () => {
 
       {/* Features */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {[
-          { title: '术语识别', desc: '自动识别云服务专业术语', color: 'blue' },
-          { title: '格式保留', desc: '保持代码块和 Markdown 格式', color: 'indigo' },
-          { title: '上下文理解', desc: 'AI 理解技术文档语境', color: 'violet' },
-        ].map((feature, i) => (
-          <div
-            key={i}
-            className="bg-[var(--surface)] rounded-xl p-4 border border-[var(--border)] hover:border-blue-400/50 hover:shadow-sm transition-all duration-200 cursor-default"
-          >
-            <div className={`w-8 h-8 rounded-lg bg-${feature.color}-500/10 flex items-center justify-center mb-3`}>
-              <div className={`w-2 h-2 rounded-full bg-${feature.color}-500`} />
-            </div>
-            <h3 className="font-medium text-[var(--foreground)] mb-1">{feature.title}</h3>
-            <p className="text-sm text-[var(--muted)]">{feature.desc}</p>
+        <div className="bg-[var(--surface)] rounded-xl p-4 border border-[var(--border)] hover:border-blue-400/50 hover:shadow-sm transition-all duration-200 cursor-default">
+          <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center mb-3">
+            <BookMarked size={20} className="text-blue-600" />
           </div>
-        ))}
+          <h3 className="font-medium text-[var(--foreground)] mb-1">术语识别</h3>
+          <p className="text-sm text-[var(--muted)]">自动识别云服务专业术语</p>
+        </div>
+        <div className="bg-[var(--surface)] rounded-xl p-4 border border-[var(--border)] hover:border-blue-400/50 hover:shadow-sm transition-all duration-200 cursor-default">
+          <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center mb-3">
+            <Code2 size={20} className="text-indigo-600" />
+          </div>
+          <h3 className="font-medium text-[var(--foreground)] mb-1">格式保留</h3>
+          <p className="text-sm text-[var(--muted)]">保持代码块和 Markdown 格式</p>
+        </div>
+        <div className="bg-[var(--surface)] rounded-xl p-4 border border-[var(--border)] hover:border-blue-400/50 hover:shadow-sm transition-all duration-200 cursor-default">
+          <div className="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center mb-3">
+            <Brain size={20} className="text-violet-600" />
+          </div>
+          <h3 className="font-medium text-[var(--foreground)] mb-1">上下文理解</h3>
+          <p className="text-sm text-[var(--muted)]">AI 理解技术文档语境</p>
+        </div>
       </div>
     </div>
   );

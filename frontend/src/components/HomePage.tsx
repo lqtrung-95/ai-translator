@@ -200,37 +200,27 @@ export const HomePage: React.FC<HomePageProps> = ({ onTranslationStart, isLoadin
 
       {/* Features */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {[
-          {
-            icon: Zap,
-            title: '快速解析',
-            desc: '10秒内自动提取文档结构',
-            color: 'amber',
-          },
-          {
-            icon: Cloud,
-            title: '云术语库',
-            desc: '内置 AWS/GCP/Azure 专业术语',
-            color: 'blue',
-          },
-          {
-            icon: Shield,
-            title: '隐私安全',
-            desc: '文档加密传输，不存储内容',
-            color: 'green',
-          },
-        ].map((feature, idx) => (
-          <div
-            key={idx}
-            className="bg-white rounded-xl p-5 border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all duration-200"
-          >
-            <div className={`w-10 h-10 rounded-xl bg-${feature.color}-100 flex items-center justify-center mb-4`}>
-              <feature.icon size={20} className={`text-${feature.color}-600`} />
-            </div>
-            <h3 className="font-medium text-slate-900 mb-1">{feature.title}</h3>
-            <p className="text-sm text-slate-500">{feature.desc}</p>
+        <div className="bg-[var(--surface)] rounded-xl p-5 border border-[var(--border)] hover:border-blue-400/50 hover:shadow-sm transition-all duration-200">
+          <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center mb-4">
+            <Zap size={20} className="text-amber-600" />
           </div>
-        ))}
+          <h3 className="font-medium text-[var(--foreground)] mb-1">快速解析</h3>
+          <p className="text-sm text-[var(--muted)]">10秒内自动提取文档结构</p>
+        </div>
+        <div className="bg-[var(--surface)] rounded-xl p-5 border border-[var(--border)] hover:border-blue-400/50 hover:shadow-sm transition-all duration-200">
+          <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center mb-4">
+            <Cloud size={20} className="text-blue-600" />
+          </div>
+          <h3 className="font-medium text-[var(--foreground)] mb-1">云术语库</h3>
+          <p className="text-sm text-[var(--muted)]">内置 AWS/GCP/Azure 专业术语</p>
+        </div>
+        <div className="bg-[var(--surface)] rounded-xl p-5 border border-[var(--border)] hover:border-blue-400/50 hover:shadow-sm transition-all duration-200">
+          <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center mb-4">
+            <Shield size={20} className="text-green-600" />
+          </div>
+          <h3 className="font-medium text-[var(--foreground)] mb-1">隐私安全</h3>
+          <p className="text-sm text-[var(--muted)]">文档加密传输，不存储内容</p>
+        </div>
       </div>
     </div>
   );

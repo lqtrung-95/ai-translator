@@ -81,8 +81,8 @@ export const GlossaryPanel: React.FC<GlossaryPanelProps> = ({ isOpen, onClose })
     if (!newTerm.english || !newTerm.chinese) return;
 
     try {
-      const response = await apiClient.addGlossaryTerm(newTerm);
-      setTerms((prev) => [...prev, response as GlossaryTerm]);
+      const response = await apiClient.addGlossaryTerm(newTerm) as unknown as GlossaryTerm;
+      setTerms((prev) => [...prev, response]);
       setNewTerm({ english: '', chinese: '', category: 'infrastructure', explanation: '' });
       setShowAddForm(false);
     } catch (error) {
