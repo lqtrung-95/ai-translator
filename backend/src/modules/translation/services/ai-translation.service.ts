@@ -413,16 +413,35 @@ export class AITranslationService {
       de: 'German',
     };
 
+    // 目标语言的本地名称（用于提示AI用目标语言输出）
+    const targetLanguageLocal = {
+      en: 'English',
+      zh: '中文',
+      ja: '日本語',
+      ko: '한국어',
+      fr: 'Français',
+      de: 'Deutsch',
+    };
+
     const sourceLanguage = request.sourceLanguage ? languageNames[request.sourceLanguage] || request.sourceLanguage : 'English';
     const targetLanguage = request.targetLanguage ? languageNames[request.targetLanguage] || request.targetLanguage : 'Chinese';
+    const targetLocal = request.targetLanguage ? targetLanguageLocal[request.targetLanguage] || targetLanguage : '中文';
 
     const modeInstructions = {
       professional:
-        `Translate the following text from ${sourceLanguage} to ${targetLanguage}, maintaining all technical terms and formatting. Be precise and professional.`,
+        `Translate the following text from ${sourceLanguage} to ${targetLanguage}. 
+IMPORTANT: Your entire response must be in ${targetLocal}. Do not include any English explanations.
+Maintain all technical terms (keep original term in parentheses if needed). Be precise and professional.
+Output only the translation, nothing else.`,
       casual:
-        `Translate the following text from ${sourceLanguage} to ${targetLanguage} in an easy-to-understand way for beginners. Explain complex concepts simply.`,
+        `Translate the following text from ${sourceLanguage} to ${targetLanguage} in an easy-to-understand way for beginners.
+IMPORTANT: Your entire response must be in ${targetLocal}. Do not include any English text except for technical terms.
+Explain complex concepts simply, but explain them in ${targetLocal}.
+Output only the translation/explanation in ${targetLocal}.`,
       summary:
-        `Summarize and translate the following text from ${sourceLanguage} to ${targetLanguage}, highlighting key points only.`,
+        `Summarize and translate the following text from ${sourceLanguage} to ${targetLanguage}.
+IMPORTANT: Your entire response must be in ${targetLocal}. Do not include any English text except for technical terms.
+Highlight key points only. Output only the summary in ${targetLocal}.`,
     };
 
     const basePrompt = `${modeInstructions[request.mode]}
@@ -432,7 +451,7 @@ ${request.context ? `Context: ${request.context}\n` : ''}
 Text to translate:
 ${request.content}
 
-Translation:`;
+${targetLocal}:`;
 
     return basePrompt;
   }
