@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  # PostgreSQL 数据库
+  postgres:
+    image: postgres:15-alpine
+    container_name: ai-translator-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ai_translator
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ai-translator-network
+
+  # Redis 缓存
+  redis:
+    image: redis:7-alpine
+    container_name: ai-translator-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - ai-translator-network
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+
+  # Adminer - 数据库管理界面
+  adminer:
+    image: adminer
+    ports:
+      - "8080:8080"
+    networks:
+      - ai-translator-network
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  ai-translator-network:
+    driver: bridge
