@@ -5,6 +5,8 @@ import { Loader2, ArrowLeftRight, Copy, Check, ChevronDown, BookMarked, Code2, B
 import { useTranslationStore } from '@/store/translation';
 import { apiClient } from '@/api/client';
 import { useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 const languages = [
   { code: 'en', label: 'English', flag: '🇺🇸' },
@@ -194,11 +196,15 @@ export const InstantTranslator = () => {
               </div>
             ) : (
               <div className="h-48 sm:h-64 p-4 sm:p-6 overflow-auto">
-                <p className="text-[var(--foreground)] text-base leading-relaxed whitespace-pre-wrap">
-                  {quickTranslatedText || (
-                    <span className="text-[var(--muted)]">翻译结果将显示在这里</span>
-                  )}
-                </p>
+                {quickTranslatedText ? (
+                  <div className="markdown-body text-[var(--foreground)] text-base leading-relaxed">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {quickTranslatedText}
+                    </ReactMarkdown>
+                  </div>
+                ) : (
+                  <p className="text-[var(--muted)] text-base">翻译结果将显示在这里</p>
+                )}
               </div>
             )}
             

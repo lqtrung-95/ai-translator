@@ -125,3 +125,33 @@ body {
 .dark .glass-card {
   background: rgba(30, 41, 59, 0.8);
 }
+
+/* Markdown rendering */
+.markdown-body {
+  white-space: normal;
+}
+
+.markdown-body p {
+  margin: 0.25rem 0;
+}
+
+.markdown-body ul,
+.markdown-body ol {
+  padding-left: 1.25rem;
+  margin: 0.25rem 0;
+}
+
+.markdown-body li + li {
+  margin-top: 0.125rem;
+}
+
+.markdown-body strong {
+  font-weight: 600;
+}
+
+.markdown-body code {
+  background: rgba(15, 23, 42, 0.08);
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-size: 0.875em;
+}

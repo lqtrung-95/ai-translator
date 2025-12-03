@@ -2,6 +2,8 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { X, Send, Bot, User, Loader2, Sparkles } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface Message {
   id: string;
@@ -131,7 +133,11 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({ isOpen, onClose }) => 
                   : 'bg-slate-100 text-slate-800 rounded-bl-md'
               }`}
             >
-              <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+              <div className="markdown-body text-sm leading-relaxed">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {message.content}
+                </ReactMarkdown>
+              </div>
             </div>
           </div>
         ))}
