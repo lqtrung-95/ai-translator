@@ -16,7 +16,8 @@ export class ApiClient {
 
   constructor(config?: ApiConfig) {
     this.client = axios.create({
-      baseURL: config?.baseURL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api',
+      // Use relative path for serverless deployment (Next.js API routes)
+      baseURL: config?.baseURL || process.env.NEXT_PUBLIC_API_URL || '/api',
       timeout: config?.timeout || 30000,
       headers: {
         'Content-Type': 'application/json',

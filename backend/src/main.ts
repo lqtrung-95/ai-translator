@@ -11,7 +11,7 @@ async function bootstrap() {
 
   // 启用 CORS
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: process.env.FRONTEND_URL?.split(',') || 'http://localhost:3000',
     credentials: true,
   });
 
@@ -42,10 +42,12 @@ async function bootstrap() {
   // Enable graceful shutdown hooks
   app.enableShutdownHooks();
   
-  await app.listen(port, 'localhost');
+  // Use 0.0.0.0 for cloud deployment (Railway, Render, etc.)
+  const host = process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost';
+  await app.listen(port, host);
 
-  console.log(`✅ Application is running on: http://localhost:${port}/api`);
-  console.log(`📚 Swagger documentation available at: http://localhost:${port}/docs`);
+  console.log(`✅ Application is running on: http://${host}:${port}/api`);
+  console.log(`📚 Swagger documentation available at: http://${host}:${port}/docs`);
 }
 
 // Graceful shutdown handlers
