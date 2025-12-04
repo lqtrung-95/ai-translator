@@ -8,6 +8,7 @@ import { GlossaryTerm } from '@/types';
 interface GlossaryPanelProps {
   isOpen: boolean;
   onClose: () => void;
+  mode?: 'sidebar' | 'modal';
 }
 
 const categories = [
@@ -19,7 +20,7 @@ const categories = [
   { id: 'security', label: '安全', color: 'red' },
 ];
 
-export const GlossaryPanel: React.FC<GlossaryPanelProps> = ({ isOpen, onClose }) => {
+export const GlossaryPanel: React.FC<GlossaryPanelProps> = ({ isOpen, onClose, mode = 'sidebar' }) => {
   const [terms, setTerms] = useState<GlossaryTerm[]>([
     { id: '1', english: 'VPC', chinese: '虚拟私有云', category: 'networking', explanation: 'Virtual Private Cloud' },
     { id: '2', english: 'EC2', chinese: '弹性计算云', category: 'compute', explanation: 'Elastic Compute Cloud' },
@@ -123,6 +124,100 @@ export const GlossaryPanel: React.FC<GlossaryPanelProps> = ({ isOpen, onClose })
 
   if (!isOpen) return null;
 
+  // Modal mode for mobile
+  if (mode === 'modal') {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div className="w-full max-w-lg max-h-[85vh] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          {/* Header */}
+          <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-700">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                <BookOpen size={18} className="text-white" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-slate-900 dark:text-white">术语库</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">{terms.length} 个术语</p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            >
+              <X size={20} />
+            </button>
+          </div>
+
+          {/* Search */}
+          <div className="p-4 space-y-3 border-b border-slate-100 dark:border-slate-800">
+            <div className="relative">
+              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="搜索术语..."
+                className="w-full pl-10 pr-4 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-800 dark:text-white bg-white dark:bg-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              />
+            </div>
+          </div>
+
+          {/* Category Filter */}
+          <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800">
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {categories.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => setSelectedCategory(cat.id)}
+                  className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
+                    selectedCategory === cat.id
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Terms List */}
+          <div className="flex-1 overflow-y-auto">
+            {isLoading ? (
+              <div className="flex items-center justify-center h-40">
+                <Loader2 size={24} className="animate-spin text-blue-600" />
+              </div>
+            ) : filteredTerms.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-40 text-slate-400">
+                <BookOpen size={32} className="mb-2" />
+                <p className="text-sm">没有找到术语</p>
+              </div>
+            ) : (
+              <div className="p-4 space-y-2">
+                {filteredTerms.map((term) => (
+                  <div
+                    key={term.id}
+                    className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl"
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-medium text-slate-900 dark:text-white">{term.english}</span>
+                      <span className="text-slate-400">→</span>
+                      <span className="text-blue-600 font-medium">{term.chinese}</span>
+                    </div>
+                    {term.explanation && (
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{term.explanation}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Sidebar mode for desktop
   return (
     <aside className="w-96 h-[calc(100vh-64px)] bg-white border-l border-slate-200 flex flex-col">
       {/* Header */}

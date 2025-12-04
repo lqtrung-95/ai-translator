@@ -17,6 +17,7 @@ interface Message {
 interface AIAssistantProps {
   isOpen: boolean;
   onClose: () => void;
+  mode?: 'sidebar' | 'modal';
 }
 
 const suggestions = [
@@ -26,7 +27,7 @@ const suggestions = [
   'S3 存储类型有哪些？',
 ];
 
-export const AIAssistant: React.FC<AIAssistantProps> = ({ isOpen, onClose }) => {
+export const AIAssistant: React.FC<AIAssistantProps> = ({ isOpen, onClose, mode = 'sidebar' }) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -133,6 +134,135 @@ ${conversationHistory}
 
   if (!isOpen) return null;
 
+  // Modal mode for mobile
+  if (mode === 'modal') {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div className="w-full max-w-lg max-h-[85vh] bg-[var(--surface)] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          {/* Header */}
+          <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border)]">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+                <Sparkles size={18} className="text-white" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-[var(--foreground)]">AI 助手</h3>
+                <p className="text-xs text-[var(--muted)]">解答技术问题</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={clearChat}
+                className="p-2 rounded-lg text-[var(--muted)] hover:text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer"
+                title="清空对话"
+              >
+                <Trash2 size={18} />
+              </button>
+              <button
+                onClick={onClose}
+                className="p-2 rounded-lg text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--background)] transition-colors cursor-pointer"
+              >
+                <X size={20} />
+              </button>
+            </div>
+          </div>
+
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                className={`flex gap-3 ${message.role === 'user' ? 'flex-row-reverse' : ''}`}
+              >
+                <div
+                  className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${
+                    message.role === 'user'
+                      ? 'bg-blue-600'
+                      : 'bg-gradient-to-br from-violet-500 to-purple-600'
+                  }`}
+                >
+                  {message.role === 'user' ? (
+                    <User size={16} className="text-white" />
+                  ) : (
+                    <Bot size={16} className="text-white" />
+                  )}
+                </div>
+                <div
+                  className={`max-w-[75%] px-4 py-3 rounded-2xl ${
+                    message.role === 'user'
+                      ? 'bg-blue-600 text-white rounded-br-md'
+                      : 'bg-[var(--background)] text-[var(--foreground)] rounded-bl-md'
+                  }`}
+                >
+                  <div className="markdown-body text-sm leading-relaxed">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {message.content}
+                    </ReactMarkdown>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {isLoading && (
+              <div className="flex gap-3">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+                  <Bot size={16} className="text-white" />
+                </div>
+                <div className="bg-[var(--background)] rounded-2xl rounded-bl-md px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <Loader2 size={16} className="animate-spin text-[var(--muted)]" />
+                    <span className="text-sm text-[var(--muted)]">思考中...</span>
+                  </div>
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Suggestions */}
+          {messages.length <= 2 && (
+            <div className="px-4 pb-2">
+              <p className="text-xs text-[var(--muted)] mb-2">快速提问</p>
+              <div className="flex flex-wrap gap-2">
+                {suggestions.map((suggestion, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => handleSuggestionClick(suggestion)}
+                    className="px-3 py-1.5 bg-[var(--background)] hover:bg-blue-500/10 text-[var(--foreground)] hover:text-blue-600 rounded-full text-xs transition-colors cursor-pointer border border-[var(--border)]"
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Input */}
+          <div className="p-4 border-t border-[var(--border)]">
+            <div className="flex items-end gap-2">
+              <textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="输入问题..."
+                rows={1}
+                className="flex-1 px-4 py-3 border border-[var(--border)] rounded-xl text-sm text-[var(--foreground)] bg-[var(--background)] placeholder-[var(--muted)] resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                style={{ maxHeight: '120px' }}
+              />
+              <button
+                onClick={handleSend}
+                disabled={!input.trim() || isLoading}
+                className="p-3 bg-blue-600 hover:bg-blue-700 disabled:bg-[var(--border)] text-white disabled:text-[var(--muted)] rounded-xl transition-colors cursor-pointer disabled:cursor-not-allowed"
+              >
+                <Send size={18} />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Sidebar mode for desktop
   return (
     <aside className="w-96 h-[calc(100vh-64px)] bg-[var(--surface)] border-l border-[var(--border)] flex flex-col">
       {/* Header */}

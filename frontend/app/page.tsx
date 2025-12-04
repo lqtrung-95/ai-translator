@@ -21,6 +21,8 @@ export default function Home() {
   const [isLoadingDocument, setIsLoadingDocument] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [showHistorySidebar, setShowHistorySidebar] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   const {
     currentDocument,
@@ -32,6 +34,16 @@ export default function Home() {
     theme,
     translationHistory,
   } = useTranslationStore();
+
+  // Check if mobile screen
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Apply theme on initial load
   useEffect(() => {
@@ -121,7 +133,7 @@ export default function Home() {
       {/* Header */}
       <header className="sticky top-0 z-50 bg-[var(--surface)]/80 backdrop-blur-xl border-b border-[var(--border)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+          <div className="relative flex items-center justify-between h-16">
             {/* Logo */}
             <div className="flex items-center gap-3">
               {appState === 'editor' ? (
@@ -148,9 +160,9 @@ export default function Home() {
               )}
             </div>
 
-            {/* Navigation Tabs */}
+            {/* Navigation Tabs - Absolutely centered, hidden on mobile */}
             {appState !== 'editor' && (
-              <nav className="hidden sm:flex items-center bg-[var(--background)] rounded-full p-1">
+              <nav className="hidden md:flex items-center bg-[var(--background)] rounded-full p-1 absolute left-1/2 -translate-x-1/2">
                 <button
                   onClick={() => setAppState('instant')}
                   className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 cursor-pointer ${
@@ -178,57 +190,67 @@ export default function Home() {
 
             {/* Editor Title */}
             {appState === 'editor' && currentDocument && (
-              <h2 className="text-sm font-medium text-[var(--muted)] truncate max-w-md">
+              <h2 className="absolute left-1/2 -translate-x-1/2 text-sm font-medium text-[var(--muted)] truncate max-w-md">
                 {currentDocument.title}
               </h2>
             )}
 
-            {/* Actions */}
-            <div className="flex items-center gap-1 sm:gap-2">
-              {/* History button - only visible on mobile since desktop shows sidebar */}
+            {/* Actions - Right aligned */}
+            <div className="flex items-center gap-1">
+              {/* History button - icon only on small/medium, with text on large */}
               <button
-                onClick={() => setShowHistory(!showHistory)}
-                className={`relative lg:hidden p-2 sm:p-2.5 rounded-xl transition-all duration-200 cursor-pointer ${
-                  showHistory
+                onClick={() => {
+                  if (window.innerWidth < 1024) {
+                    setShowHistory(!showHistory);
+                  } else {
+                    setShowHistorySidebar(!showHistorySidebar);
+                  }
+                }}
+                className={`relative flex items-center gap-1.5 p-2 lg:px-3 lg:py-2 rounded-xl transition-all duration-200 cursor-pointer ${
+                  showHistory || showHistorySidebar
                     ? 'bg-blue-500/10 text-blue-600'
                     : 'text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--background)]'
                 }`}
                 title="翻译历史"
               >
-                <History size={20} />
+                <History size={20} className="lg:w-[18px] lg:h-[18px]" />
+                <span className="hidden lg:inline text-sm font-medium">历史</span>
                 {translationHistory.length > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-blue-600 text-white text-[10px] font-medium rounded-full flex items-center justify-center">
+                  <span className="lg:relative absolute -top-0.5 -right-0.5 lg:top-auto lg:right-auto w-4 h-4 lg:w-5 lg:h-5 bg-blue-600 text-white text-[10px] font-medium rounded-full flex items-center justify-center">
                     {translationHistory.length > 9 ? '9+' : translationHistory.length}
                   </span>
                 )}
               </button>
+              {/* Glossary button */}
               <button
                 onClick={() => setShowGlossary(!showGlossary)}
-                className={`hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all duration-200 cursor-pointer ${
+                className={`flex items-center gap-1.5 p-2 lg:px-3 lg:py-2 rounded-xl transition-all duration-200 cursor-pointer ${
                   showGlossary
                     ? 'bg-blue-500/10 text-blue-600'
                     : 'text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--background)]'
                 }`}
                 title="术语库"
               >
-                <BookOpen size={18} />
-                <span className="text-sm font-medium">术语库</span>
+                <BookOpen size={20} className="lg:w-[18px] lg:h-[18px]" />
+                <span className="hidden lg:inline text-sm font-medium">术语库</span>
               </button>
+              {/* AI Assistant button */}
               <button
                 onClick={() => setShowAIAssistant(!showAIAssistant)}
-                className={`hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all duration-200 cursor-pointer ${
+                className={`flex items-center gap-1.5 p-2 lg:px-3 lg:py-2 rounded-xl transition-all duration-200 cursor-pointer ${
                   showAIAssistant
                     ? 'bg-blue-500/10 text-blue-600'
                     : 'text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--background)]'
                 }`}
                 title="AI 助手"
               >
-                <MessageCircle size={18} />
-                <span className="text-sm font-medium">AI助手</span>
+                <MessageCircle size={20} className="lg:w-[18px] lg:h-[18px]" />
+                <span className="hidden lg:inline text-sm font-medium">AI助手</span>
               </button>
+              {/* Settings button */}
               <button
                 onClick={() => setShowSettings(true)}
-                className="p-2 sm:p-2.5 rounded-xl text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--background)] transition-all duration-200 cursor-pointer"
+                className="p-2 rounded-xl text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--background)] transition-all duration-200 cursor-pointer"
                 title="设置"
               >
                 <Settings size={20} />
@@ -237,9 +259,9 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Mobile Navigation */}
+        {/* Mobile/Tablet Navigation - visible below md breakpoint */}
         {appState !== 'editor' && (
-          <div className="sm:hidden border-t border-[var(--border)] px-4 py-2">
+          <div className="md:hidden border-t border-[var(--border)] px-4 py-2">
             <nav className="flex items-center bg-[var(--background)] rounded-full p-1">
               <button
                 onClick={() => setAppState('instant')}
@@ -270,13 +292,13 @@ export default function Home() {
 
       {/* Main Content */}
       <main className="flex min-h-[calc(100vh-4rem)]">
-        {/* History Sidebar - Always visible on desktop when not in editor */}
-        {appState !== 'editor' && (
+        {/* History Sidebar - Toggle on desktop */}
+        {showHistorySidebar && appState !== 'editor' && (
           <div className="hidden lg:block lg:w-72 xl:w-80 border-r border-[var(--border)] bg-[var(--background)]">
             <div className="sticky top-16 h-[calc(100vh-4rem)]">
               <HistoryPanel
                 isOpen={true}
-                onClose={() => {}}
+                onClose={() => setShowHistorySidebar(false)}
                 onDocumentLoad={(item) => {
                   if (item.documentData) {
                     setCurrentDocument(item.documentData);
@@ -289,7 +311,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* Mobile History Panel - Only shown when toggled */}
+        {/* Mobile History Panel - Bottom sheet */}
         {showHistory && appState !== 'editor' && (
           <>
             <div
@@ -341,15 +363,37 @@ export default function Home() {
           )}
         </div>
 
-        {/* Side Panels */}
-        <AIAssistant
-          isOpen={showAIAssistant}
-          onClose={() => setShowAIAssistant(false)}
-        />
-        <GlossaryPanel
-          isOpen={showGlossary}
-          onClose={() => setShowGlossary(false)}
-        />
+        {/* Side Panels - Sidebar on desktop, Modal on mobile */}
+        {!isMobile && (
+          <>
+            <AIAssistant
+              isOpen={showAIAssistant}
+              onClose={() => setShowAIAssistant(false)}
+              mode="sidebar"
+            />
+            <GlossaryPanel
+              isOpen={showGlossary}
+              onClose={() => setShowGlossary(false)}
+              mode="sidebar"
+            />
+          </>
+        )}
+        
+        {/* Modals for mobile */}
+        {isMobile && (
+          <>
+            <AIAssistant
+              isOpen={showAIAssistant}
+              onClose={() => setShowAIAssistant(false)}
+              mode="modal"
+            />
+            <GlossaryPanel
+              isOpen={showGlossary}
+              onClose={() => setShowGlossary(false)}
+              mode="modal"
+            />
+          </>
+        )}
       </main>
 
       {/* Settings Modal */}
