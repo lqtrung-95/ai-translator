@@ -356,9 +356,9 @@ export async function parsePDF(base64Content: string, source: string = 'upload')
     }],
     metadata: {
       source,
-      fetchedAt: new Date().toISOString(),
-      wordCount: 0,
-      paragraphCount: 1
+      format: 'text' as const,
+      extractedAt: new Date().toISOString(),
+      totalParagraphs: 1
     }
   };
 }

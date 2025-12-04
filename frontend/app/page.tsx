@@ -30,6 +30,7 @@ export default function Home() {
     showGlossary,
     setShowGlossary,
     theme,
+    translationHistory,
   } = useTranslationStore();
 
   // Apply theme on initial load
@@ -183,10 +184,11 @@ export default function Home() {
             )}
 
             {/* Actions */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2">
+              {/* History button - only visible on mobile since desktop shows sidebar */}
               <button
                 onClick={() => setShowHistory(!showHistory)}
-                className={`p-2.5 rounded-xl transition-all duration-200 cursor-pointer ${
+                className={`relative lg:hidden p-2 sm:p-2.5 rounded-xl transition-all duration-200 cursor-pointer ${
                   showHistory
                     ? 'bg-blue-500/10 text-blue-600'
                     : 'text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--background)]'
@@ -194,10 +196,15 @@ export default function Home() {
                 title="翻译历史"
               >
                 <History size={20} />
+                {translationHistory.length > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-blue-600 text-white text-[10px] font-medium rounded-full flex items-center justify-center">
+                    {translationHistory.length > 9 ? '9+' : translationHistory.length}
+                  </span>
+                )}
               </button>
               <button
                 onClick={() => setShowGlossary(!showGlossary)}
-                className={`p-2.5 rounded-xl transition-all duration-200 cursor-pointer ${
+                className={`hidden sm:flex p-2.5 rounded-xl transition-all duration-200 cursor-pointer ${
                   showGlossary
                     ? 'bg-blue-500/10 text-blue-600'
                     : 'text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--background)]'
@@ -208,7 +215,7 @@ export default function Home() {
               </button>
               <button
                 onClick={() => setShowAIAssistant(!showAIAssistant)}
-                className={`p-2.5 rounded-xl transition-all duration-200 cursor-pointer ${
+                className={`hidden sm:flex p-2.5 rounded-xl transition-all duration-200 cursor-pointer ${
                   showAIAssistant
                     ? 'bg-blue-500/10 text-blue-600'
                     : 'text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--background)]'
@@ -219,7 +226,7 @@ export default function Home() {
               </button>
               <button
                 onClick={() => setShowSettings(true)}
-                className="p-2.5 rounded-xl text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--background)] transition-all duration-200 cursor-pointer"
+                className="p-2 sm:p-2.5 rounded-xl text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--background)] transition-all duration-200 cursor-pointer"
                 title="设置"
               >
                 <Settings size={20} />
@@ -260,7 +267,50 @@ export default function Home() {
       </header>
 
       {/* Main Content */}
-      <main className="flex">
+      <main className="flex min-h-[calc(100vh-4rem)]">
+        {/* History Sidebar - Always visible on desktop when not in editor */}
+        {appState !== 'editor' && (
+          <div className="hidden lg:block lg:w-72 xl:w-80 border-r border-[var(--border)] bg-[var(--background)]">
+            <div className="sticky top-16 h-[calc(100vh-4rem)]">
+              <HistoryPanel
+                isOpen={true}
+                onClose={() => {}}
+                onDocumentLoad={(item) => {
+                  if (item.documentData) {
+                    setCurrentDocument(item.documentData);
+                    setAppState('editor');
+                  }
+                }}
+                isInline={true}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Mobile History Panel - Only shown when toggled */}
+        {showHistory && appState !== 'editor' && (
+          <>
+            <div
+              className="fixed inset-0 bg-black/40 z-40 lg:hidden"
+              onClick={() => setShowHistory(false)}
+            />
+            <div className="fixed lg:hidden bottom-0 left-0 right-0 h-[70vh] z-50 bg-[var(--surface)] rounded-t-2xl shadow-2xl animate-slide-up">
+              <div className="w-12 h-1 bg-[var(--border)] rounded-full mx-auto mt-3 mb-1" />
+              <HistoryPanel
+                isOpen={true}
+                onClose={() => setShowHistory(false)}
+                onDocumentLoad={(item) => {
+                  if (item.documentData) {
+                    setCurrentDocument(item.documentData);
+                    setAppState('editor');
+                  }
+                }}
+                isInline={true}
+              />
+            </div>
+          </>
+        )}
+
         <div className="flex-1">
           {appState === 'editor' ? (
             <div className="h-[calc(100vh-4rem)] overflow-hidden">
@@ -305,26 +355,6 @@ export default function Home() {
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}
       />
-
-      {/* History Panel */}
-      <HistoryPanel
-        isOpen={showHistory}
-        onClose={() => setShowHistory(false)}
-        onDocumentLoad={(item) => {
-          if (item.documentData) {
-            setCurrentDocument(item.documentData);
-            setAppState('editor');
-          }
-        }}
-      />
-
-      {/* Overlay for History Panel */}
-      {showHistory && (
-        <div
-          className="fixed inset-0 bg-black/20 z-40"
-          onClick={() => setShowHistory(false)}
-        />
-      )}
     </div>
   );
 }
