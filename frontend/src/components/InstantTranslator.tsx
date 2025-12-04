@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, useRef, useEffect } from 'react';
 import { Loader2, ArrowLeftRight, Copy, Check, ChevronDown, BookMarked, Code2, Brain, X } from 'lucide-react';
 import { useTranslationStore } from '@/store/translation';
 import { apiClient } from '@/api/client';
@@ -8,13 +8,74 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 const languages = [
-  { code: 'en', label: 'English', flag: '🇺🇸' },
-  { code: 'zh', label: '中文', flag: '🇨🇳' },
-  { code: 'ja', label: '日本語', flag: '🇯🇵' },
-  { code: 'ko', label: '한국어', flag: '🇰🇷' },
-  { code: 'fr', label: 'Français', flag: '🇫🇷' },
-  { code: 'de', label: 'Deutsch', flag: '🇩🇪' },
+  { code: 'en', label: 'English', flag: 'us' },
+  { code: 'zh', label: '中文', flag: 'cn' },
+  { code: 'ja', label: '日本語', flag: 'jp' },
+  { code: 'ko', label: '한국어', flag: 'kr' },
+  { code: 'fr', label: 'Français', flag: 'fr' },
+  { code: 'de', label: 'Deutsch', flag: 'de' },
 ];
+
+// Custom Language Selector with flags
+interface LanguageSelectorProps {
+  value: string;
+  onChange: (code: string) => void;
+  align?: 'left' | 'right';
+}
+
+const LanguageSelector = ({ value, onChange, align = 'left' }: LanguageSelectorProps) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const selected = languages.find(l => l.code === value);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-2.5 bg-[var(--surface)] border border-[var(--border)] rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--foreground)] cursor-pointer hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+      >
+        <span className={`fi fi-${selected?.flag} fis rounded-sm`} style={{ width: '20px', height: '15px' }} />
+        <span>{selected?.label}</span>
+        <ChevronDown size={16} className={`text-[var(--muted)] transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+      
+      {isOpen && (
+        <div className={`absolute top-full mt-1 ${align === 'right' ? 'right-0' : 'left-0'} z-50 min-w-[160px] bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-lg py-1 overflow-hidden`}>
+          {languages.map((lang) => (
+            <button
+              key={lang.code}
+              type="button"
+              onClick={() => {
+                onChange(lang.code);
+                setIsOpen(false);
+              }}
+              className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-sm transition-colors cursor-pointer ${
+                lang.code === value
+                  ? 'bg-blue-500/10 text-blue-600 font-medium'
+                  : 'text-[var(--foreground)] hover:bg-[var(--background)]'
+              }`}
+            >
+              <span className={`fi fi-${lang.flag} fis rounded-sm`} style={{ width: '20px', height: '15px' }} />
+              <span>{lang.label}</span>
+              {lang.code === value && <Check size={14} className="ml-auto" />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const modes = [
   { id: 'professional', label: '专业精确', desc: '保留技术术语' },
@@ -130,7 +191,7 @@ export const InstantTranslator = () => {
   const targetLang = languages.find(l => l.code === quickTargetLanguage);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Header */}
       <div className="text-center space-y-2">
         <h2 className="text-2xl sm:text-3xl font-semibold text-[var(--foreground)] tracking-tight">
@@ -150,20 +211,11 @@ export const InstantTranslator = () => {
         {/* Language Selector Bar */}
         <div className="flex items-center justify-between px-4 sm:px-6 py-4 bg-[var(--background)] border-b border-[var(--border)]">
           {/* Source Language */}
-          <div className="relative">
-            <select
-              value={quickSourceLanguage}
-              onChange={(e) => setQuickLanguages(e.target.value, quickTargetLanguage)}
-              className="appearance-none bg-[var(--surface)] border border-[var(--border)] rounded-xl px-4 py-2.5 pr-10 text-sm font-medium text-[var(--foreground)] cursor-pointer hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-            >
-              {languages.map((lang) => (
-                <option key={lang.code} value={lang.code}>
-                  {lang.flag} {lang.label}
-                </option>
-              ))}
-            </select>
-            <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--muted)] pointer-events-none" />
-          </div>
+          <LanguageSelector
+            value={quickSourceLanguage}
+            onChange={(code) => setQuickLanguages(code, quickTargetLanguage)}
+            align="left"
+          />
 
           {/* Swap Button */}
           <button
@@ -175,20 +227,11 @@ export const InstantTranslator = () => {
           </button>
 
           {/* Target Language */}
-          <div className="relative">
-            <select
-              value={quickTargetLanguage}
-              onChange={(e) => setQuickLanguages(quickSourceLanguage, e.target.value)}
-              className="appearance-none bg-[var(--surface)] border border-[var(--border)] rounded-xl px-4 py-2.5 pr-10 text-sm font-medium text-[var(--foreground)] cursor-pointer hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-            >
-              {languages.map((lang) => (
-                <option key={lang.code} value={lang.code}>
-                  {lang.flag} {lang.label}
-                </option>
-              ))}
-            </select>
-            <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--muted)] pointer-events-none" />
-          </div>
+          <LanguageSelector
+            value={quickTargetLanguage}
+            onChange={(code) => setQuickLanguages(quickSourceLanguage, code)}
+            align="right"
+          />
         </div>
 
         {/* Translation Areas */}
@@ -204,15 +247,15 @@ export const InstantTranslator = () => {
                 }
               }}
               placeholder="输入或粘贴要翻译的文本..."
-              className="w-full h-80 sm:h-96 p-4 sm:p-6 bg-transparent text-[var(--foreground)] placeholder-[var(--muted)] resize-none focus:outline-none text-base leading-relaxed"
+              className="w-full h-72 sm:h-80 lg:h-[420px] p-5 sm:p-6 bg-transparent text-[var(--foreground)] placeholder-[var(--muted)] resize-none focus:outline-none text-base leading-relaxed"
             />
             {/* Source Actions */}
-            <div className="absolute top-3 right-3 flex items-center gap-1">
+            <div className="absolute top-4 right-4 flex items-center gap-1">
               {quickSourceText && (
                 <>
                   <button
                     onClick={handleCopySource}
-                    className="p-2 rounded-lg text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface)] transition-all cursor-pointer"
+                    className="p-2 rounded-lg text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--background)] transition-all cursor-pointer"
                     title="复制原文"
                   >
                     {copiedSource ? <Check size={16} className="text-green-500" /> : <Copy size={16} />}
@@ -227,7 +270,7 @@ export const InstantTranslator = () => {
                 </>
               )}
             </div>
-            <div className="absolute bottom-3 left-4 text-xs text-[var(--muted)]">
+            <div className="absolute bottom-4 left-5 text-xs text-[var(--muted)]">
               {quickSourceText.length} / 2000
             </div>
           </div>
@@ -235,18 +278,18 @@ export const InstantTranslator = () => {
           {/* Translation Output */}
           <div className="relative bg-[var(--background)]/50">
             {isQuickTranslating ? (
-              <div className="h-80 sm:h-96 flex items-center justify-center">
+              <div className="h-72 sm:h-80 lg:h-[420px] flex items-center justify-center">
                 <div className="flex flex-col items-center gap-3">
                   <Loader2 size={24} className="text-blue-600 animate-spin" />
                   <span className="text-sm text-[var(--muted)]">翻译中...</span>
                 </div>
               </div>
             ) : quickError ? (
-              <div className="h-80 sm:h-96 flex items-center justify-center p-6">
+              <div className="h-72 sm:h-80 lg:h-[420px] flex items-center justify-center p-6">
                 <p className="text-red-500 text-sm text-center">{quickError}</p>
               </div>
             ) : (
-              <div className="h-80 sm:h-96 p-4 sm:p-6 overflow-auto">
+              <div className="h-72 sm:h-80 lg:h-[420px] p-5 sm:p-6 overflow-auto">
                 {quickTranslatedText ? (
                   <div className="markdown-body text-[var(--foreground)] text-base leading-relaxed">
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>
@@ -263,7 +306,7 @@ export const InstantTranslator = () => {
             {quickTranslatedText && !isQuickTranslating && (
               <button
                 onClick={handleCopyTarget}
-                className="absolute top-3 right-3 p-2 rounded-lg text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface)] transition-all cursor-pointer"
+                className="absolute top-4 right-4 p-2 rounded-lg text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface)] transition-all cursor-pointer"
                 title="复制翻译"
               >
                 {copiedTarget ? <Check size={18} className="text-green-500" /> : <Copy size={18} />}
@@ -273,14 +316,14 @@ export const InstantTranslator = () => {
         </div>
 
         {/* Action Bar */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 px-4 sm:px-6 py-4 bg-[var(--background)] border-t border-[var(--border)]">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 px-5 sm:px-6 py-4 bg-[var(--background)] border-t border-[var(--border)]">
           {/* Mode Selector */}
           <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0">
             {modes.map((mode) => (
               <button
                 key={mode.id}
                 onClick={() => setTranslationMode(mode.id)}
-                className={`flex-shrink-0 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer ${
+                className={`flex-shrink-0 px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer ${
                   translationMode === mode.id
                     ? 'bg-blue-600 text-white shadow-sm'
                     : 'bg-[var(--surface)] text-[var(--muted)] border border-[var(--border)] hover:border-blue-400 hover:text-[var(--foreground)]'
@@ -295,7 +338,7 @@ export const InstantTranslator = () => {
           <button
             onClick={handleTranslate}
             disabled={!canTranslate || isQuickTranslating}
-            className="flex items-center justify-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-[var(--border)] disabled:text-[var(--muted)] text-white rounded-xl font-medium transition-all duration-200 cursor-pointer disabled:cursor-not-allowed shadow-sm hover:shadow-md disabled:shadow-none"
+            className="flex items-center justify-center gap-2 px-8 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-[var(--border)] disabled:text-[var(--muted)] text-white rounded-xl font-medium transition-all duration-200 cursor-pointer disabled:cursor-not-allowed shadow-sm hover:shadow-md disabled:shadow-none"
           >
             {isQuickTranslating ? (
               <>
@@ -310,22 +353,22 @@ export const InstantTranslator = () => {
       </div>
 
       {/* Features */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-[var(--surface)] rounded-xl p-4 border border-[var(--border)] hover:border-blue-400/50 hover:shadow-sm transition-all duration-200 cursor-default">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
+        <div className="bg-[var(--surface)] rounded-xl p-5 border border-[var(--border)] hover:border-blue-400/50 hover:shadow-sm transition-all duration-200 cursor-default">
           <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center mb-3">
             <BookMarked size={20} className="text-blue-600" />
           </div>
           <h3 className="font-medium text-[var(--foreground)] mb-1">术语识别</h3>
           <p className="text-sm text-[var(--muted)]">自动识别云服务专业术语</p>
         </div>
-        <div className="bg-[var(--surface)] rounded-xl p-4 border border-[var(--border)] hover:border-blue-400/50 hover:shadow-sm transition-all duration-200 cursor-default">
+        <div className="bg-[var(--surface)] rounded-xl p-5 border border-[var(--border)] hover:border-blue-400/50 hover:shadow-sm transition-all duration-200 cursor-default">
           <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center mb-3">
             <Code2 size={20} className="text-indigo-600" />
           </div>
           <h3 className="font-medium text-[var(--foreground)] mb-1">格式保留</h3>
           <p className="text-sm text-[var(--muted)]">保持代码块和 Markdown 格式</p>
         </div>
-        <div className="bg-[var(--surface)] rounded-xl p-4 border border-[var(--border)] hover:border-blue-400/50 hover:shadow-sm transition-all duration-200 cursor-default">
+        <div className="bg-[var(--surface)] rounded-xl p-5 border border-[var(--border)] hover:border-blue-400/50 hover:shadow-sm transition-all duration-200 cursor-default">
           <div className="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center mb-3">
             <Brain size={20} className="text-violet-600" />
           </div>

@@ -204,25 +204,27 @@ export default function Home() {
               </button>
               <button
                 onClick={() => setShowGlossary(!showGlossary)}
-                className={`hidden sm:flex p-2.5 rounded-xl transition-all duration-200 cursor-pointer ${
+                className={`hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all duration-200 cursor-pointer ${
                   showGlossary
                     ? 'bg-blue-500/10 text-blue-600'
                     : 'text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--background)]'
                 }`}
                 title="术语库"
               >
-                <BookOpen size={20} />
+                <BookOpen size={18} />
+                <span className="text-sm font-medium">术语库</span>
               </button>
               <button
                 onClick={() => setShowAIAssistant(!showAIAssistant)}
-                className={`hidden sm:flex p-2.5 rounded-xl transition-all duration-200 cursor-pointer ${
+                className={`hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all duration-200 cursor-pointer ${
                   showAIAssistant
                     ? 'bg-blue-500/10 text-blue-600'
                     : 'text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--background)]'
                 }`}
                 title="AI 助手"
               >
-                <MessageCircle size={20} />
+                <MessageCircle size={18} />
+                <span className="text-sm font-medium">AI助手</span>
               </button>
               <button
                 onClick={() => setShowSettings(true)}
@@ -329,7 +331,7 @@ export default function Home() {
               )}
             </div>
           ) : (
-            <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+            <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-6 sm:py-8">
               {appState === 'instant' ? (
                 <InstantTranslator />
               ) : (
