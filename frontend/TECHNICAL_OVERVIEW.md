@@ -359,5 +359,5 @@ npm start
 
 ---
 
-*Last updated: December 2024*
+*Last updated: December 2025*
 
