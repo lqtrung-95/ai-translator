@@ -62,13 +62,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
       />
       
       {/* Modal */}
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+      <div className="relative bg-[var(--surface)] rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
-          <h2 className="text-lg font-semibold text-slate-900">设置</h2>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)]">
+          <h2 className="text-lg font-semibold text-[var(--foreground)]">设置</h2>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+            className="p-2 rounded-lg text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--background)] transition-colors cursor-pointer"
           >
             <X size={20} />
           </button>
@@ -78,7 +78,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
         <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
           {/* Theme */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-3">
+            <label className="block text-sm font-medium text-[var(--foreground)] mb-3">
               主题
             </label>
             <div className="grid grid-cols-3 gap-2">
@@ -92,8 +92,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                   onClick={() => setTheme(option.id)}
                   className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all cursor-pointer ${
                     theme === option.id
-                      ? 'border-blue-500 bg-blue-50 text-blue-700'
-                      : 'border-slate-200 text-slate-600 hover:border-slate-300'
+                      ? 'border-blue-500 bg-blue-500/10 text-blue-600'
+                      : 'border-[var(--border)] text-[var(--muted)] hover:border-[var(--muted)]'
                   }`}
                 >
                   <option.icon size={20} />
@@ -105,7 +105,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
 
           {/* AI Provider */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-3">
+            <label className="block text-sm font-medium text-[var(--foreground)] mb-3">
               <div className="flex items-center gap-2">
                 <Zap size={16} />
                 AI 翻译引擎
@@ -122,20 +122,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                   onClick={() => setAIProvider(option.id)}
                   className={`w-full flex items-center justify-between p-3 rounded-xl border-2 transition-all cursor-pointer ${
                     aiProvider === option.id
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-slate-200 hover:border-slate-300'
+                      ? 'border-blue-500 bg-blue-500/10'
+                      : 'border-[var(--border)] hover:border-[var(--muted)]'
                   }`}
                 >
                   <div className="text-left">
                     <div className="flex items-center gap-2">
-                      <p className={`font-medium ${aiProvider === option.id ? 'text-blue-700' : 'text-slate-900'}`}>
+                      <p className={`font-medium ${aiProvider === option.id ? 'text-blue-600' : 'text-[var(--foreground)]'}`}>
                         {option.label}
                       </p>
                       {aiProvider === option.id && (
                         <Check size={16} className="text-blue-600" />
                       )}
                     </div>
-                    <p className="text-xs text-slate-500">{option.desc}</p>
+                    <p className="text-xs text-[var(--muted)]">{option.desc}</p>
                   </div>
                   <span className={`text-xs font-medium ${providerInfo[option.id].statusColor}`}>
                     {providerInfo[option.id].status}
@@ -143,7 +143,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                 </button>
               ))}
             </div>
-            <p className="mt-2 text-xs text-slate-500">
+            <p className="mt-2 text-xs text-[var(--muted)]">
               当前选择: <span className="font-medium text-blue-600">{aiProvider.toUpperCase()}</span> - 翻译时将使用此引擎
             </p>
           </div>
@@ -151,7 +151,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 bg-slate-50 border-t border-slate-200">
+        <div className="px-6 py-4 bg-[var(--background)] border-t border-[var(--border)]">
           <button
             onClick={onClose}
             className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-colors cursor-pointer"
