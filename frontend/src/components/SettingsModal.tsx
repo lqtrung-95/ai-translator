@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { X, Moon, Sun, Monitor, Globe, Zap, Database, Check } from 'lucide-react';
+import { X, Moon, Sun, Monitor, Zap, Check } from 'lucide-react';
 import { useTranslationStore, Theme, AIProvider } from '@/store/translation';
 
 interface SettingsModalProps {
@@ -148,52 +148,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
             </p>
           </div>
 
-          {/* Toggles */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Globe size={18} className="text-slate-500" />
-                <div>
-                  <p className="text-sm font-medium text-slate-700">自动检测语言</p>
-                  <p className="text-xs text-slate-500">自动识别输入文本的语言</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setAutoDetectLanguage(!autoDetectLanguage)}
-                className={`relative w-11 h-6 rounded-full transition-colors cursor-pointer ${
-                  autoDetectLanguage ? 'bg-blue-600' : 'bg-slate-200'
-                }`}
-              >
-                <span
-                  className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform shadow-sm ${
-                    autoDetectLanguage ? 'translate-x-5' : ''
-                  }`}
-                />
-              </button>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Database size={18} className="text-slate-500" />
-                <div>
-                  <p className="text-sm font-medium text-slate-700">保存翻译历史</p>
-                  <p className="text-xs text-slate-500">本地保存最近的翻译记录</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setSaveHistory(!saveHistory)}
-                className={`relative w-11 h-6 rounded-full transition-colors cursor-pointer ${
-                  saveHistory ? 'bg-blue-600' : 'bg-slate-200'
-                }`}
-              >
-                <span
-                  className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform shadow-sm ${
-                    saveHistory ? 'translate-x-5' : ''
-                  }`}
-                />
-              </button>
-            </div>
-          </div>
         </div>
 
         {/* Footer */}

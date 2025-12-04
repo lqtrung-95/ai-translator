@@ -12,6 +12,17 @@ import {
 export type Theme = 'light' | 'dark' | 'system';
 export type AIProvider = 'gemini' | 'claude' | 'openai';
 
+export interface TranslationHistoryItem {
+  id: string;
+  sourceText: string;
+  translatedText: string;
+  sourceLanguage: string;
+  targetLanguage: string;
+  mode: TranslationMode;
+  timestamp: number;
+  provider: AIProvider;
+}
+
 interface TranslationState {
   // 当前文档状态
   currentDocument: TranslationDocument | null;
@@ -44,6 +55,9 @@ interface TranslationState {
 
   // 术语库
   customGlossary: GlossaryTerm[];
+
+  // 翻译历史
+  translationHistory: TranslationHistoryItem[];
 
   // 设置
   theme: Theme;
@@ -81,6 +95,12 @@ interface TranslationState {
   setAutoDetectLanguage: (auto: boolean) => void;
   setSaveHistory: (save: boolean) => void;
 
+  // 历史记录方法
+  addToHistory: (item: Omit<TranslationHistoryItem, 'id' | 'timestamp'>) => void;
+  removeFromHistory: (id: string) => void;
+  clearHistory: () => void;
+  loadHistoryItem: (item: TranslationHistoryItem) => void;
+
   reset: () => void;
 }
 
@@ -105,6 +125,7 @@ const initialState = {
   currentUser: null,
   isAuthenticated: false,
   customGlossary: [],
+  translationHistory: [],
   // 设置默认值
   theme: 'system' as Theme,
   aiProvider: 'gemini' as AIProvider,
@@ -173,6 +194,33 @@ export const useTranslationStore = create<TranslationState>()(
         setAutoDetectLanguage: (auto) => set({ autoDetectLanguage: auto }),
         setSaveHistory: (save) => set({ saveHistory: save }),
 
+        // 历史记录方法
+        addToHistory: (item) =>
+          set((state) => {
+            if (!state.saveHistory) return state;
+            const newItem: TranslationHistoryItem = {
+              ...item,
+              id: Date.now().toString(),
+              timestamp: Date.now(),
+            };
+            // Keep only last 50 items
+            const history = [newItem, ...state.translationHistory].slice(0, 50);
+            return { translationHistory: history };
+          }),
+        removeFromHistory: (id) =>
+          set((state) => ({
+            translationHistory: state.translationHistory.filter((h) => h.id !== id),
+          })),
+        clearHistory: () => set({ translationHistory: [] }),
+        loadHistoryItem: (item) =>
+          set({
+            quickSourceText: item.sourceText,
+            quickTranslatedText: item.translatedText,
+            quickSourceLanguage: item.sourceLanguage,
+            quickTargetLanguage: item.targetLanguage,
+            translationMode: item.mode,
+          }),
+
         reset: () => set(initialState),
       }),
       {
@@ -188,6 +236,8 @@ export const useTranslationStore = create<TranslationState>()(
           aiProvider: state.aiProvider,
           autoDetectLanguage: state.autoDetectLanguage,
           saveHistory: state.saveHistory,
+          // 持久化历史
+          translationHistory: state.translationHistory,
         }),
       }
     )

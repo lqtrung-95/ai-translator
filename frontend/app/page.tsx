@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { BookOpen, MessageCircle, Settings, Languages, FileText, ArrowLeft, Sparkles } from 'lucide-react';
+import { BookOpen, MessageCircle, Settings, Languages, FileText, ArrowLeft, Sparkles, History } from 'lucide-react';
 import { InstantTranslator } from '@/components/InstantTranslator';
 import { HomePage } from '@/components/HomePage';
 import { DualEditor } from '@/components/DualEditor';
 import { AIAssistant } from '@/components/AIAssistant';
 import { GlossaryPanel } from '@/components/GlossaryPanel';
+import { HistoryPanel } from '@/components/HistoryPanel';
 import { SettingsModal, applyTheme } from '@/components/SettingsModal';
 import { useTranslationStore } from '@/store/translation';
 import { TranslationDocument, Paragraph } from '@/types';
@@ -18,6 +19,7 @@ export default function Home() {
   const [isLoadingDocument, setIsLoadingDocument] = useState(false);
   const [documentError, setDocumentError] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
 
   const {
     currentDocument,
@@ -107,7 +109,7 @@ export default function Home() {
                   </div>
                   <div>
                     <h1 className="text-lg font-semibold text-[var(--foreground)] tracking-tight">CloudTranslate</h1>
-                    <p className="text-[10px] text-[var(--muted)] -mt-0.5">AI-Powered Documentation</p>
+                    <p className="text-[10px] text-[var(--muted)] -mt-0.5">AI-Powered Translation</p>
                   </div>
                 </div>
               )}
@@ -150,6 +152,17 @@ export default function Home() {
 
             {/* Actions */}
             <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowHistory(!showHistory)}
+                className={`p-2.5 rounded-xl transition-all duration-200 cursor-pointer ${
+                  showHistory
+                    ? 'bg-blue-500/10 text-blue-600'
+                    : 'text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--background)]'
+                }`}
+                title="翻译历史"
+              >
+                <History size={20} />
+              </button>
               <button
                 onClick={() => setShowGlossary(!showGlossary)}
                 className={`p-2.5 rounded-xl transition-all duration-200 cursor-pointer ${
@@ -260,6 +273,20 @@ export default function Home() {
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}
       />
+
+      {/* History Panel */}
+      <HistoryPanel
+        isOpen={showHistory}
+        onClose={() => setShowHistory(false)}
+      />
+
+      {/* Overlay for History Panel */}
+      {showHistory && (
+        <div
+          className="fixed inset-0 bg-black/20 z-40"
+          onClick={() => setShowHistory(false)}
+        />
+      )}
     </div>
   );
 }

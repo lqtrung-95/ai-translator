@@ -1,10 +1,9 @@
 "use client";
 
-import { useCallback, useMemo } from 'react';
-import { Loader2, ArrowLeftRight, Copy, Check, ChevronDown, BookMarked, Code2, Brain } from 'lucide-react';
+import { useCallback, useMemo, useState } from 'react';
+import { Loader2, ArrowLeftRight, Copy, Check, ChevronDown, BookMarked, Code2, Brain, X } from 'lucide-react';
 import { useTranslationStore } from '@/store/translation';
 import { apiClient } from '@/api/client';
-import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -24,7 +23,8 @@ const modes = [
 ] as const;
 
 export const InstantTranslator = () => {
-  const [copied, setCopied] = useState(false);
+  const [copiedSource, setCopiedSource] = useState(false);
+  const [copiedTarget, setCopiedTarget] = useState(false);
   const {
     quickSourceText,
     quickTranslatedText,
@@ -41,6 +41,7 @@ export const InstantTranslator = () => {
     setQuickError,
     setIsQuickTranslating,
     setLastQuickResult,
+    addToHistory,
   } = useTranslationStore();
 
   const swapLanguages = () => {
@@ -49,12 +50,26 @@ export const InstantTranslator = () => {
     setQuickTranslatedText('');
   };
 
-  const handleCopy = async () => {
+  const handleCopySource = async () => {
+    if (quickSourceText) {
+      await navigator.clipboard.writeText(quickSourceText);
+      setCopiedSource(true);
+      setTimeout(() => setCopiedSource(false), 2000);
+    }
+  };
+
+  const handleCopyTarget = async () => {
     if (quickTranslatedText) {
       await navigator.clipboard.writeText(quickTranslatedText);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setCopiedTarget(true);
+      setTimeout(() => setCopiedTarget(false), 2000);
     }
+  };
+
+  const handleClear = () => {
+    setQuickSourceText('');
+    setQuickTranslatedText('');
+    setQuickError(null);
   };
 
   const handleTranslate = useCallback(async () => {
@@ -80,6 +95,15 @@ export const InstantTranslator = () => {
         translated: data.translated,
         confidence: data.confidence,
         provider: (data.provider || aiProvider) as 'gemini' | 'claude' | 'openai',
+      });
+      // Add to history
+      addToHistory({
+        sourceText: quickSourceText,
+        translatedText: data.translated,
+        sourceLanguage: quickSourceLanguage,
+        targetLanguage: quickTargetLanguage,
+        mode: translationMode,
+        provider: aiProvider,
       });
     } catch (error: any) {
       console.error('Translation error', error);
@@ -112,7 +136,7 @@ export const InstantTranslator = () => {
           智能翻译
         </h2>
         <p className="text-[var(--muted)] text-sm sm:text-base">
-          专为云服务文档优化，支持 AWS、GCP、Azure 等技术术语
+          专为云服务文档优化，支持 AWS、GCP、OCI 等技术术语
         </p>
         <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-[var(--surface)] border border-[var(--border)] rounded-full text-xs text-[var(--muted)]">
           <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
@@ -172,10 +196,36 @@ export const InstantTranslator = () => {
           <div className="relative">
             <textarea
               value={quickSourceText}
-              onChange={(e) => setQuickSourceText(e.target.value)}
+              onChange={(e) => {
+                setQuickSourceText(e.target.value);
+                if (quickTranslatedText) {
+                  setQuickTranslatedText('');
+                }
+              }}
               placeholder="输入或粘贴要翻译的文本..."
-              className="w-full h-48 sm:h-64 p-4 sm:p-6 bg-transparent text-[var(--foreground)] placeholder-[var(--muted)] resize-none focus:outline-none text-base leading-relaxed"
+              className="w-full h-80 sm:h-96 p-4 sm:p-6 bg-transparent text-[var(--foreground)] placeholder-[var(--muted)] resize-none focus:outline-none text-base leading-relaxed"
             />
+            {/* Source Actions */}
+            <div className="absolute top-3 right-3 flex items-center gap-1">
+              {quickSourceText && (
+                <>
+                  <button
+                    onClick={handleCopySource}
+                    className="p-2 rounded-lg text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface)] transition-all cursor-pointer"
+                    title="复制原文"
+                  >
+                    {copiedSource ? <Check size={16} className="text-green-500" /> : <Copy size={16} />}
+                  </button>
+                  <button
+                    onClick={handleClear}
+                    className="p-2 rounded-lg text-[var(--muted)] hover:text-red-500 hover:bg-red-500/10 transition-all cursor-pointer"
+                    title="清空"
+                  >
+                    <X size={16} />
+                  </button>
+                </>
+              )}
+            </div>
             <div className="absolute bottom-3 left-4 text-xs text-[var(--muted)]">
               {quickSourceText.length} / 2000
             </div>
@@ -184,18 +234,18 @@ export const InstantTranslator = () => {
           {/* Translation Output */}
           <div className="relative bg-[var(--background)]/50">
             {isQuickTranslating ? (
-              <div className="h-48 sm:h-64 flex items-center justify-center">
+              <div className="h-80 sm:h-96 flex items-center justify-center">
                 <div className="flex flex-col items-center gap-3">
                   <Loader2 size={24} className="text-blue-600 animate-spin" />
                   <span className="text-sm text-[var(--muted)]">翻译中...</span>
                 </div>
               </div>
             ) : quickError ? (
-              <div className="h-48 sm:h-64 flex items-center justify-center p-6">
+              <div className="h-80 sm:h-96 flex items-center justify-center p-6">
                 <p className="text-red-500 text-sm text-center">{quickError}</p>
               </div>
             ) : (
-              <div className="h-48 sm:h-64 p-4 sm:p-6 overflow-auto">
+              <div className="h-80 sm:h-96 p-4 sm:p-6 overflow-auto">
                 {quickTranslatedText ? (
                   <div className="markdown-body text-[var(--foreground)] text-base leading-relaxed">
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>
@@ -211,11 +261,11 @@ export const InstantTranslator = () => {
             {/* Copy Button */}
             {quickTranslatedText && !isQuickTranslating && (
               <button
-                onClick={handleCopy}
+                onClick={handleCopyTarget}
                 className="absolute top-3 right-3 p-2 rounded-lg text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface)] transition-all cursor-pointer"
                 title="复制翻译"
               >
-                {copied ? <Check size={18} className="text-green-500" /> : <Copy size={18} />}
+                {copiedTarget ? <Check size={18} className="text-green-500" /> : <Copy size={18} />}
               </button>
             )}
           </div>
