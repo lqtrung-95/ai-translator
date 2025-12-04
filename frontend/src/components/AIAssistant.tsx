@@ -32,7 +32,7 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({ isOpen, onClose, mode 
     {
       id: '1',
       role: 'assistant',
-      content: '你好！我是 AI 翻译助手，可以帮助你理解云服务文档中的技术概念、解释术语，或回答翻译相关问题。',
+      content: '我是一名专业的云服务技术助手，旨在为您提供云服务相关的技术支持和解答。',
       timestamp: new Date(),
     },
   ]);
@@ -54,7 +54,7 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({ isOpen, onClose, mode 
       {
         id: '1',
         role: 'assistant',
-        content: '你好！我是 AI 翻译助手，可以帮助你理解云服务文档中的技术概念、解释术语，或回答翻译相关问题。',
+        content: '我是一名专业的云服务技术助手，旨在为您提供云服务相关的技术支持和解答。',
         timestamp: new Date(),
       },
     ]);
