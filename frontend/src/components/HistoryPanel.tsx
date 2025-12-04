@@ -1,11 +1,13 @@
 "use client";
 
-import { X, History, Trash2, Clock, ArrowRight } from 'lucide-react';
+import { X, History, Trash2, Clock, ArrowRight, FileText, Sparkles, Eye } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useTranslationStore, TranslationHistoryItem } from '@/store/translation';
 
 interface HistoryPanelProps {
   isOpen: boolean;
   onClose: () => void;
+  onDocumentLoad?: (item: TranslationHistoryItem) => void;
 }
 
 const languages: Record<string, string> = {
@@ -23,7 +25,7 @@ const modeLabels: Record<string, string> = {
   summary: '总结',
 };
 
-export const HistoryPanel = ({ isOpen, onClose }: HistoryPanelProps) => {
+export const HistoryPanel = ({ isOpen, onClose, onDocumentLoad }: HistoryPanelProps) => {
   const { translationHistory, removeFromHistory, clearHistory, loadHistoryItem } = useTranslationStore();
 
   const formatTime = (timestamp: number) => {
@@ -40,8 +42,19 @@ export const HistoryPanel = ({ isOpen, onClose }: HistoryPanelProps) => {
   };
 
   const handleLoadItem = (item: TranslationHistoryItem) => {
-    loadHistoryItem(item);
-    onClose();
+    if (item.type === 'document') {
+      // For document items, load the saved document data
+      if (item.documentData && onDocumentLoad) {
+        onDocumentLoad(item);
+        onClose();
+      } else {
+        toast('文档数据不可用', { icon: '📄' });
+      }
+    } else {
+      // For instant translation, load into the translator
+      loadHistoryItem(item);
+      onClose();
+    }
   };
 
   return (
@@ -101,6 +114,18 @@ export const HistoryPanel = ({ isOpen, onClose }: HistoryPanelProps) => {
                 {/* Meta Info */}
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2 text-xs text-[var(--muted)]">
+                    {/* Type indicator */}
+                    {item.type === 'document' ? (
+                      <span className="flex items-center gap-1 px-1.5 py-0.5 bg-purple-500/10 text-purple-600 rounded text-[10px]">
+                        <FileText size={10} />
+                        文档
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1 px-1.5 py-0.5 bg-green-500/10 text-green-600 rounded text-[10px]">
+                        <Sparkles size={10} />
+                        即时
+                      </span>
+                    )}
                     <span>{languages[item.sourceLanguage] || item.sourceLanguage}</span>
                     <ArrowRight size={12} />
                     <span>{languages[item.targetLanguage] || item.targetLanguage}</span>
@@ -120,9 +145,21 @@ export const HistoryPanel = ({ isOpen, onClose }: HistoryPanelProps) => {
                   </button>
                 </div>
 
-                {/* Source Text */}
-                <p className="text-sm text-[var(--foreground)] line-clamp-2 mb-1">
-                  {item.sourceText}
+                {/* Document Title (for document type) */}
+                {item.type === 'document' && item.documentTitle && (
+                  <p className="text-sm font-medium text-[var(--foreground)] line-clamp-1 mb-1">
+                    {item.documentTitle}
+                  </p>
+                )}
+
+                {/* Source Text / URL */}
+                <p className={`text-sm ${item.type === 'document' ? 'text-[var(--muted)]' : 'text-[var(--foreground)]'} line-clamp-2 mb-1`}>
+                  {item.type === 'document' && item.documentUrl ? (
+                    <span className="flex items-center gap-1 group-hover:text-blue-600 transition-colors">
+                      {item.documentUrl}
+                      <Eye size={12} className="opacity-0 group-hover:opacity-100 flex-shrink-0" />
+                    </span>
+                  ) : item.sourceText}
                 </p>
 
                 {/* Translated Text */}

@@ -18,7 +18,7 @@ export class ApiClient {
     this.client = axios.create({
       // Use relative path for serverless deployment (Next.js API routes)
       baseURL: config?.baseURL || process.env.NEXT_PUBLIC_API_URL || '/api',
-      timeout: config?.timeout || 30000,
+      timeout: config?.timeout || 120000, // 2 minutes for document translation
       headers: {
         'Content-Type': 'application/json',
       },
@@ -109,6 +109,17 @@ export class ApiClient {
       '/instant-translation',
       data
     );
+  }
+
+  async documentTranslate(data: {
+    type: 'url' | 'content';
+    content: string;
+    sourceLanguage?: string;
+    targetLanguage?: string;
+    mode?: 'professional' | 'casual' | 'summary';
+    provider?: 'gemini' | 'claude' | 'openai';
+  }) {
+    return this.client.post('/document-translate', data);
   }
 
   async updateParagraph(

@@ -21,6 +21,11 @@ export interface TranslationHistoryItem {
   mode: TranslationMode;
   timestamp: number;
   provider: AIProvider;
+  type: 'instant' | 'document';
+  documentTitle?: string;
+  documentUrl?: string;
+  // Store full document for document type
+  documentData?: TranslationDocument;
 }
 
 interface TranslationState {
@@ -203,9 +208,15 @@ export const useTranslationStore = create<TranslationState>()(
               id: Date.now().toString(),
               timestamp: Date.now(),
             };
-            // Keep only last 50 items
-            const history = [newItem, ...state.translationHistory].slice(0, 50);
-            return { translationHistory: history };
+            // Keep only last 50 items, but limit document items to 10 (they're large)
+            let history = [newItem, ...state.translationHistory];
+            const documentItems = history.filter(h => h.type === 'document');
+            if (documentItems.length > 10) {
+              // Remove oldest document items beyond 10
+              const oldestDocIds = documentItems.slice(10).map(d => d.id);
+              history = history.filter(h => !oldestDocIds.includes(h.id));
+            }
+            return { translationHistory: history.slice(0, 50) };
           }),
         removeFromHistory: (id) =>
           set((state) => ({

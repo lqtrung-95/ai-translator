@@ -104,6 +104,7 @@ export const InstantTranslator = () => {
         targetLanguage: quickTargetLanguage,
         mode: translationMode,
         provider: aiProvider,
+        type: 'instant',
       });
     } catch (error: any) {
       console.error('Translation error', error);

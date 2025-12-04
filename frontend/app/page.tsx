@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { BookOpen, MessageCircle, Settings, Languages, FileText, ArrowLeft, Sparkles, History } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { InstantTranslator } from '@/components/InstantTranslator';
 import { HomePage } from '@/components/HomePage';
 import { DualEditor } from '@/components/DualEditor';
@@ -11,13 +12,13 @@ import { HistoryPanel } from '@/components/HistoryPanel';
 import { SettingsModal, applyTheme } from '@/components/SettingsModal';
 import { useTranslationStore } from '@/store/translation';
 import { TranslationDocument, Paragraph } from '@/types';
+import { apiClient } from '@/api/client';
 
 type AppState = 'instant' | 'editor' | 'document';
 
 export default function Home() {
   const [appState, setAppState] = useState<AppState>('instant');
   const [isLoadingDocument, setIsLoadingDocument] = useState(false);
-  const [documentError, setDocumentError] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
 
@@ -36,35 +37,66 @@ export default function Home() {
     applyTheme(theme);
   }, [theme]);
 
-  const handleTranslationStart = async (data: { type: 'url' | 'file'; content: string }) => {
+  const handleTranslationStart = async (data: { type: 'url' | 'file'; content: string }): Promise<boolean> => {
     setIsLoadingDocument(true);
-    setDocumentError(null);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      const mockDocument: TranslationDocument = {
-        id: Date.now().toString(),
-        title: `${data.type === 'url' ? 'URL' : 'File'} - ${data.content}`,
-        sourceUrl: data.type === 'url' ? data.content : undefined,
+      const { translationMode, aiProvider, addToHistory } = useTranslationStore.getState();
+      
+      // Call the real API
+      const response = await apiClient.documentTranslate({
+        type: data.type === 'url' ? 'url' : 'content',
+        content: data.content,
         sourceLanguage: 'en',
         targetLanguage: 'zh',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        paragraphs: generateMockParagraphs(),
+        mode: translationMode,
+        provider: aiProvider,
+      }) as any;
+
+      // Transform response to match TranslationDocument type
+      const translatedDoc: TranslationDocument = {
+        id: response.id,
+        title: response.title,
+        sourceUrl: data.type === 'url' ? data.content : undefined,
+        sourceLanguage: response.sourceLanguage || 'en',
+        targetLanguage: response.targetLanguage || 'zh',
+        createdAt: response.createdAt,
+        updatedAt: response.updatedAt,
+        paragraphs: response.paragraphs.map((p: any) => ({
+          ...p,
+          glossaryTerms: p.glossaryTerms || [],
+        })),
         metadata: {
-          format: data.type === 'url' ? 'url' : 'html',
-          source: data.content,
-          extractedAt: new Date().toISOString(),
-          totalParagraphs: 5,
+          format: response.metadata?.format || (data.type === 'url' ? 'url' : 'html'),
+          source: response.metadata?.source || data.content,
+          extractedAt: response.metadata?.extractedAt || new Date().toISOString(),
+          totalParagraphs: response.paragraphs.length,
         },
       };
 
-      setCurrentDocument(mockDocument);
+      // Add to history with full document data
+      addToHistory({
+        sourceText: data.type === 'url' ? data.content : `[文件] ${data.content.slice(0, 100)}...`,
+        translatedText: `${response.paragraphs.length} 段落已翻译`,
+        sourceLanguage: 'en',
+        targetLanguage: 'zh',
+        mode: translationMode,
+        provider: aiProvider,
+        type: 'document',
+        documentTitle: response.title,
+        documentUrl: data.type === 'url' ? data.content : undefined,
+        documentData: translatedDoc,
+      });
+
+      setCurrentDocument(translatedDoc);
       setAppState('editor');
-    } catch (error) {
-      setDocumentError('处理文档失败，请重试');
+      toast.success('文档翻译完成！');
+      return true;
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.error || error?.message || '处理文档失败，请重试';
+      toast.error(errorMessage);
       console.error('Error processing document:', error);
+      return false;
     } finally {
       setIsLoadingDocument(false);
     }
@@ -231,7 +263,7 @@ export default function Home() {
       <main className="flex">
         <div className="flex-1">
           {appState === 'editor' ? (
-            <div className="h-[calc(100vh-64px)]">
+            <div className="h-[calc(100vh-4rem)] overflow-hidden">
               {currentDocument ? (
                 <DualEditor
                   paragraphs={currentDocument.paragraphs}
@@ -241,7 +273,7 @@ export default function Home() {
                 <div className="h-full flex items-center justify-center">
                   <div className="flex flex-col items-center gap-3">
                     <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                    <p className="text-slate-500 text-sm">加载中...</p>
+                    <p className="text-[var(--muted)] text-sm">加载中...</p>
                   </div>
                 </div>
               )}
@@ -278,6 +310,12 @@ export default function Home() {
       <HistoryPanel
         isOpen={showHistory}
         onClose={() => setShowHistory(false)}
+        onDocumentLoad={(item) => {
+          if (item.documentData) {
+            setCurrentDocument(item.documentData);
+            setAppState('editor');
+          }
+        }}
       />
 
       {/* Overlay for History Panel */}
@@ -291,68 +329,3 @@ export default function Home() {
   );
 }
 
-function generateMockParagraphs(): Paragraph[] {
-  return [
-    {
-      id: '1',
-      order: 1,
-      type: 'heading',
-      original: 'Introduction to AWS VPC',
-      translated: 'AWS VPC 简介',
-      translationStatus: 'completed',
-      glossaryTerms: [
-        {
-          id: 'vpc1',
-          english: 'VPC',
-          chinese: '虚拟私有云',
-          category: 'infrastructure',
-          explanation: 'Virtual Private Cloud',
-        },
-      ],
-    },
-    {
-      id: '2',
-      order: 2,
-      type: 'paragraph',
-      original:
-        'Amazon Virtual Private Cloud (Amazon VPC) enables you to launch AWS resources into a virtual network that you\'ve defined.',
-      translated:
-        'Amazon VPC 允许您在您定义的虚拟网络中启动 AWS 资源。',
-      translationStatus: 'completed',
-      glossaryTerms: [],
-    },
-    {
-      id: '3',
-      order: 3,
-      type: 'paragraph',
-      original:
-        'You have complete control over your virtual networking environment, including selection of your own IP address range, creation of subnets, and configuration of route tables and network gateways.',
-      translated: '您可以完全控制虚拟网络环境，包括选择 IP 地址范围、创建子网、配置路由表和网络网关。',
-      translationStatus: 'completed',
-      glossaryTerms: [],
-    },
-    {
-      id: '4',
-      order: 4,
-      type: 'code',
-      original: `{
-  "VpcId": "vpc-0ee975135d3f2598d",
-  "CidrBlock": "10.0.0.0/16",
-  "IsDefault": false
-}`,
-      translated: '{...} (代码块无需翻译)',
-      translationStatus: 'completed',
-      glossaryTerms: [],
-    },
-    {
-      id: '5',
-      order: 5,
-      type: 'paragraph',
-      original:
-        'Additionally, you can use multiple layers of security, such as security groups and network access control lists, to help control access to Amazon EC2 instances in each subnet.',
-      translated: '您还可以使用安全组和网络访问控制列表等多层安全，来控制对每个子网中 EC2 实例的访问。',
-      translationStatus: 'completed',
-      glossaryTerms: [],
-    },
-  ];
-}
