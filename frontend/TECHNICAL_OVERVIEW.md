@@ -359,5 +359,16 @@ npm start
 
 ---
 
+## 🔮 Potential Improvements
+
+- [ ] Add user authentication (Supabase Auth)
+- [ ] Cloud sync for history/glossary
+- [ ] PDF file support
+- [ ] More language pairs
+- [ ] Translation memory/caching
+- [ ] Streaming responses for long translations
+
+---
+
 *Last updated: December 2025*
 
