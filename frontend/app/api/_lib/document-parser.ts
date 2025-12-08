@@ -30,7 +30,18 @@ export interface ParsedDocument {
 export async function parseUrl(url: string): Promise<ParsedDocument> {
   console.log(`Fetching URL: ${url}`);
 
-  const response = await fetch(url, {
+  // Extract anchor/hash from URL
+  let anchorId: string | null = null;
+  let cleanUrl = url;
+
+  const hashIndex = url.indexOf('#');
+  if (hashIndex !== -1) {
+    anchorId = url.substring(hashIndex + 1);
+    cleanUrl = url.substring(0, hashIndex);
+    console.log(`Detected anchor: #${anchorId}`);
+  }
+
+  const response = await fetch(cleanUrl, {
     headers: {
       'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -43,17 +54,17 @@ export async function parseUrl(url: string): Promise<ParsedDocument> {
   }
 
   const html = await response.text();
-  return parseHTML(html, url, 'url');
+  return parseHTML(html, url, 'url', anchorId);
 }
 
 /**
  * Parse HTML content
  */
-export function parseHTML(html: string, source: string = 'upload', format: 'url' | 'html' = 'html'): ParsedDocument {
+export function parseHTML(html: string, source: string = 'upload', format: 'url' | 'html' = 'html', anchorId?: string | null): ParsedDocument {
   const $ = cheerio.load(html);
 
-  // Remove unwanted elements
-  $('script, style, nav, footer, header, aside, .sidebar, .navigation, .menu, .ads, .advertisement, .cookie-banner, .popup').remove();
+  // Remove unwanted elements including images, figures, and media
+  $('script, style, nav, footer, header, aside, .sidebar, .navigation, .menu, .ads, .advertisement, .cookie-banner, .popup, img, figure, picture, video, iframe, svg').remove();
 
   // Try to find the main content area
   let mainContent = $('main, article, .content, .main-content, #content, #main, .documentation, .doc-content, .markdown-body, .prose').first();
@@ -61,11 +72,60 @@ export function parseHTML(html: string, source: string = 'upload', format: 'url'
     mainContent = $('body');
   }
 
+  // If anchor ID is provided, try to find that element and start from there
+  if (anchorId) {
+    // Try different ID formats and common patterns
+    const possibleIds = [
+      anchorId,
+      anchorId.replace(/_/g, '-'),
+      anchorId.replace(/-/g, '_'),
+      decodeURIComponent(anchorId),
+    ];
+
+    let foundElement = null;
+    for (const id of possibleIds) {
+      // Try to find by ID
+      const byId = $(`#${id}`);
+      if (byId.length > 0) {
+        foundElement = byId;
+        break;
+      }
+
+      // Try to find by name attribute
+      const byName = $(`[name="${id}"]`);
+      if (byName.length > 0) {
+        foundElement = byName;
+        break;
+      }
+
+      // Try to find heading with matching text or data attributes
+      const byDataId = $(`[data-id="${id}"], [data-anchor="${id}"]`);
+      if (byDataId.length > 0) {
+        foundElement = byDataId;
+        break;
+      }
+    }
+
+    if (foundElement && foundElement.length > 0) {
+      console.log(`Found anchor element: ${anchorId}`);
+
+      // Get the anchor element and all its following siblings
+      // Create a temporary container to hold these elements
+      const tempContainer = $('<div></div>');
+      foundElement.nextAll().addBack().each((_, el) => {
+        tempContainer.append($(el).clone());
+      });
+      mainContent = tempContainer as any;
+    } else {
+      console.log(`Anchor not found: ${anchorId}, parsing from beginning`);
+    }
+  }
+
   // Extract title
-  let title = $('title').text().trim() || 
-              $('h1').first().text().trim() || 
+  let title = $('title').text().trim() ||
+              $('h1').first().text().trim() ||
               'Untitled Document';
-  
+
   // Clean up title
   title = title.replace(/\s+/g, ' ').substring(0, 200);
 
@@ -87,6 +147,19 @@ export function parseHTML(html: string, source: string = 'upload', format: 'url'
     // Skip if inside another processed element
     if ($el.parents('pre, code, ul, ol, table').length > 0 && !['pre', 'code', 'ul', 'ol', 'table'].includes(tagName)) {
       return;
+    }
+
+    // Skip if text contains image alt text patterns or common image-related phrases
+    const imagePatterns = [
+      /^(image|photo|picture|figure|diagram|screenshot|icon|logo|illustration)(\s|:|\.|$)/i,
+      /\.(jpg|jpeg|png|gif|svg|webp|bmp)$/i,
+      /click to (enlarge|expand|view)/i,
+      /thumbnail/i,
+    ];
+
+    const hasImagePattern = imagePatterns.some(pattern => pattern.test(text));
+    if (hasImagePattern) {
+      return; // Skip this element
     }
 
     // Determine type and extract content
@@ -151,7 +224,7 @@ export function parseHTML(html: string, source: string = 'upload', format: 'url'
   if (paragraphs.length < 3) {
     const bodyText = mainContent.text();
     const sentences = bodyText.split(/[.!?。！？]\s+/).filter(s => s.trim().length > 10);
-    
+
     paragraphs.length = 0;
     sentences.slice(0, 50).forEach((sentence, idx) => {
       paragraphs.push({
@@ -193,7 +266,7 @@ export function parseMarkdown(markdown: string, source: string = 'upload'): Pars
 
   const flushBlock = () => {
     if (currentBlock.length === 0) return;
-    
+
     const text = currentBlock.join('\n').trim();
     if (text.length < 3) {
       currentBlock = [];
@@ -242,7 +315,7 @@ export function parseMarkdown(markdown: string, source: string = 'upload'): Pars
       flushBlock();
       const level = headingMatch[1].length;
       const headingText = headingMatch[2].trim();
-      
+
       // Use first h1 as title
       if (level === 1 && title === 'Untitled Document') {
         title = headingText;
@@ -303,10 +376,10 @@ export function parseMarkdown(markdown: string, source: string = 'upload'): Pars
  */
 export function parsePlainText(text: string, source: string = 'upload'): ParsedDocument {
   const paragraphs: ParsedParagraph[] = [];
-  
+
   // Split by double newlines or single newlines
   const blocks = text.split(/\n\n+/).filter(b => b.trim().length > 0);
-  
+
   blocks.slice(0, 100).forEach((block, idx) => {
     const trimmed = block.trim();
     if (trimmed.length < 3) return;
@@ -371,7 +444,7 @@ export function parseContent(content: string, source: string = 'upload'): Parsed
   if (content.trim().startsWith('<!DOCTYPE') || content.trim().startsWith('<html') || content.includes('<body')) {
     return parseHTML(content, source, 'html');
   }
-  
+
   // Check for Markdown indicators
   if (content.match(/^#{1,6}\s+/m) || content.includes('```') || content.match(/\[.+\]\(.+\)/)) {
     return parseMarkdown(content, source);
@@ -389,7 +462,7 @@ export async function parseContentAsync(content: string, source: string = 'uploa
   if (content.startsWith('data:application/pdf;base64,')) {
     return parsePDF(content, source);
   }
-  
+
   // Otherwise use sync parser
   return parseContent(content, source);
 }
