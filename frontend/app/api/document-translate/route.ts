@@ -1,15 +1,20 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { parseUrl, parseContentAsync, ParsedDocument, ParsedParagraph } from '../_lib/document-parser';
+import { NextRequest, NextResponse } from "next/server";
+import {
+  parseUrl,
+  parseContentAsync,
+  ParsedDocument,
+  ParsedParagraph,
+} from "../_lib/document-parser";
 
-type TranslationMode = 'professional' | 'casual' | 'summary';
+type TranslationMode = "professional" | "casual" | "summary";
 
 interface DocumentTranslateRequest {
-  type: 'url' | 'content';
+  type: "url" | "content";
   content: string; // URL or raw content
   sourceLanguage?: string;
   targetLanguage?: string;
   mode?: TranslationMode;
-  provider?: 'gemini' | 'claude' | 'openai';
+  provider?: "gemini" | "claude" | "openai";
 }
 
 interface TranslatedDocument extends ParsedDocument {
@@ -24,54 +29,71 @@ interface TranslatedDocument extends ParsedDocument {
 export async function POST(request: NextRequest) {
   try {
     const body: DocumentTranslateRequest = await request.json();
-    const { 
-      type, 
-      content, 
-      sourceLanguage = 'en', 
-      targetLanguage = 'zh',
-      mode = 'professional',
-      provider = 'gemini'
+    const {
+      type,
+      content,
+      sourceLanguage = "en",
+      targetLanguage = "zh",
+      mode = "professional",
+      provider = "gemini",
     } = body;
 
     if (!content) {
-      return NextResponse.json({ error: 'Content is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: "Content is required" },
+        { status: 400 }
+      );
     }
 
     // 1. Parse the document
     let parsedDoc: ParsedDocument;
-    
-    if (type === 'url') {
+
+    if (type === "url") {
       try {
         parsedDoc = await parseUrl(content);
       } catch (error: any) {
-        return NextResponse.json({ 
-          error: `Failed to fetch URL: ${error.message}` 
-        }, { status: 400 });
+        return NextResponse.json(
+          {
+            error: `Failed to fetch URL: ${error.message}`,
+          },
+          { status: 400 }
+        );
       }
     } else {
       try {
-        parsedDoc = await parseContentAsync(content, 'upload');
+        parsedDoc = await parseContentAsync(content, "upload");
       } catch (error: any) {
-        return NextResponse.json({ 
-          error: `Failed to parse file: ${error.message}` 
-        }, { status: 400 });
+        return NextResponse.json(
+          {
+            error: `Failed to parse file: ${error.message}`,
+          },
+          { status: 400 }
+        );
       }
     }
 
     if (parsedDoc.paragraphs.length === 0) {
-      return NextResponse.json({ 
-        error: 'No translatable content found in the document. Try a specific documentation page instead of the homepage.' 
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error:
+            "No translatable content found in the document. Try a specific documentation page instead of the homepage.",
+        },
+        { status: 400 }
+      );
     }
 
     // Limit paragraphs to avoid timeout (max 30 for reasonable response time)
     const maxParagraphs = 30;
     if (parsedDoc.paragraphs.length > maxParagraphs) {
-      console.log(`Limiting from ${parsedDoc.paragraphs.length} to ${maxParagraphs} paragraphs`);
+      console.log(
+        `Limiting from ${parsedDoc.paragraphs.length} to ${maxParagraphs} paragraphs`
+      );
       parsedDoc.paragraphs = parsedDoc.paragraphs.slice(0, maxParagraphs);
     }
 
-    console.log(`Translating ${parsedDoc.paragraphs.length} paragraphs from: ${parsedDoc.title}`);
+    console.log(
+      `Translating ${parsedDoc.paragraphs.length} paragraphs from: ${parsedDoc.title}`
+    );
 
     // 2. Translate all paragraphs
     const translatedParagraphs = await translateParagraphs(
@@ -96,10 +118,13 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(translatedDoc);
   } catch (error: any) {
-    console.error('Document translation error:', error);
-    return NextResponse.json({ 
-      error: error.message || 'Document translation failed' 
-    }, { status: 500 });
+    console.error("Document translation error:", error);
+    return NextResponse.json(
+      {
+        error: error.message || "Document translation failed",
+      },
+      { status: 500 }
+    );
   }
 }
 
@@ -112,21 +137,21 @@ async function translateParagraphs(
   provider: string
 ): Promise<ParsedParagraph[]> {
   const results: ParsedParagraph[] = [];
-  
+
   // Process in batches of 10 for faster performance
   const batchSize = 10;
-  
+
   for (let i = 0; i < paragraphs.length; i += batchSize) {
     const batch = paragraphs.slice(i, i + batchSize);
-    
+
     const batchResults = await Promise.all(
       batch.map(async (paragraph) => {
         // Skip code blocks - just mark as completed
-        if (paragraph.type === 'code') {
+        if (paragraph.type === "code") {
           return {
             ...paragraph,
             translated: paragraph.original,
-            translationStatus: 'completed' as const,
+            translationStatus: "completed" as const,
           };
         }
 
@@ -138,26 +163,29 @@ async function translateParagraphs(
             mode,
             provider
           );
-          
+
           return {
             ...paragraph,
             translated,
-            translationStatus: 'completed' as const,
+            translationStatus: "completed" as const,
           };
         } catch (error) {
-          console.error(`Failed to translate paragraph ${paragraph.id}:`, error);
+          console.error(
+            `Failed to translate paragraph ${paragraph.id}:`,
+            error
+          );
           return {
             ...paragraph,
             translated: `[Translation failed] ${paragraph.original}`,
-            translationStatus: 'error' as const,
+            translationStatus: "error" as const,
           };
         }
       })
     );
-    
+
     results.push(...batchResults);
   }
-  
+
   return results;
 }
 
@@ -170,116 +198,175 @@ async function translateText(
   provider: string
 ): Promise<string> {
   const prompt = buildPrompt(text, mode, sourceLanguage, targetLanguage);
-  
+
   // Try Gemini
   const geminiKey = process.env.GEMINI_API_KEY;
-  if (provider === 'gemini' && geminiKey && !geminiKey.startsWith('your-')) {
+  if (provider === "gemini" && geminiKey && !geminiKey.startsWith("your-")) {
     try {
+      console.log(`Translating with Gemini: ${text.substring(0, 50)}...`);
       const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${geminiKey}`,
         {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             contents: [{ parts: [{ text: prompt }] }],
             generationConfig: { temperature: 0.3, maxOutputTokens: 2048 },
             safetySettings: [
-              { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
+              {
+                category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                threshold: "BLOCK_NONE",
+              },
+              {
+                category: "HARM_CATEGORY_HATE_SPEECH",
+                threshold: "BLOCK_NONE",
+              },
+              { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+              {
+                category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+                threshold: "BLOCK_NONE",
+              },
             ],
           }),
         }
       );
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error(`Gemini API error: ${res.status} - ${errorText}`);
+        throw new Error(`Gemini API error: ${res.status}`);
+      }
+
       const data = await res.json();
-      const translated = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+      console.log("Gemini response:", JSON.stringify(data).substring(0, 200));
+
+      const translated =
+        data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
       if (translated) {
         return translated;
+      } else {
+        console.error("Gemini response missing translation:", data);
+        throw new Error("Gemini response missing translation content");
       }
     } catch (e) {
-      console.error('Gemini error:', e);
+      console.error("Gemini error:", e);
+      throw e;
     }
   }
 
   // Try Claude
   const claudeKey = process.env.CLAUDE_API_KEY;
-  if (provider === 'claude' && claudeKey && !claudeKey.startsWith('your-')) {
+  if (provider === "claude" && claudeKey && !claudeKey.startsWith("your-")) {
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
+      console.log(`Translating with Claude: ${text.substring(0, 50)}...`);
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
         headers: {
-          'x-api-key': claudeKey,
-          'anthropic-version': '2023-06-01',
-          'content-type': 'application/json',
+          "x-api-key": claudeKey,
+          "anthropic-version": "2023-06-01",
+          "content-type": "application/json",
         },
         body: JSON.stringify({
-          model: 'claude-3-sonnet-20240229',
+          model: "claude-3-5-sonnet-20241022",
           max_tokens: 2048,
-          messages: [{ role: 'user', content: prompt }],
+          messages: [{ role: "user", content: prompt }],
         }),
       });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error(`Claude API error: ${res.status} - ${errorText}`);
+        throw new Error(`Claude API error: ${res.status}`);
+      }
+
       const data = await res.json();
       const translated = data.content?.[0]?.text?.trim();
       if (translated) {
         return translated;
+      } else {
+        console.error("Claude response missing translation:", data);
+        throw new Error("Claude response missing translation content");
       }
     } catch (e) {
-      console.error('Claude error:', e);
+      console.error("Claude error:", e);
+      throw e;
     }
   }
 
   // Try OpenAI
   const openaiKey = process.env.OPENAI_API_KEY;
-  if (provider === 'openai' && openaiKey && !openaiKey.startsWith('your-')) {
+  if (provider === "openai" && openaiKey && !openaiKey.startsWith("your-")) {
     try {
-      const res = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
+      console.log(`Translating with OpenAI: ${text.substring(0, 50)}...`);
+      const res = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
         headers: {
           Authorization: `Bearer ${openaiKey}`,
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: 'gpt-4',
+          model: "gpt-4",
           messages: [
             {
-              role: 'system',
-              content: 'You are a professional technical translator. Translate accurately and preserve formatting.',
+              role: "system",
+              content:
+                "You are a professional technical translator. Translate accurately and preserve formatting.",
             },
-            { role: 'user', content: prompt },
+            { role: "user", content: prompt },
           ],
           temperature: 0.3,
           max_tokens: 2048,
         }),
       });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error(`OpenAI API error: ${res.status} - ${errorText}`);
+        throw new Error(`OpenAI API error: ${res.status}`);
+      }
+
       const data = await res.json();
       const translated = data.choices?.[0]?.message?.content?.trim();
       if (translated) {
         return translated;
+      } else {
+        console.error("OpenAI response missing translation:", data);
+        throw new Error("OpenAI response missing translation content");
       }
     } catch (e) {
-      console.error('OpenAI error:', e);
+      console.error("OpenAI error:", e);
+      throw e;
     }
   }
 
-  // Fallback: return original with marker
-  return `[待翻译] ${text}`;
+  // No provider available or configured
+  throw new Error(
+    `Translation provider '${provider}' is not configured. Please check your API keys in environment variables.`
+  );
 }
 
-function buildPrompt(text: string, mode: TranslationMode, sourceLang: string, targetLang: string): string {
+function buildPrompt(
+  text: string,
+  mode: TranslationMode,
+  sourceLang: string,
+  targetLang: string
+): string {
   const languageNames: Record<string, string> = {
-    en: 'English',
-    zh: 'Chinese',
-    ja: 'Japanese',
-    ko: 'Korean',
-    fr: 'French',
-    de: 'German',
+    en: "English",
+    zh: "Chinese",
+    ja: "Japanese",
+    ko: "Korean",
+    fr: "French",
+    de: "German",
   };
 
   const targetLanguageLocal: Record<string, string> = {
-    en: 'English',
-    zh: '中文',
-    ja: '日本語',
-    ko: '한국어',
-    fr: 'Français',
-    de: 'Deutsch',
+    en: "English",
+    zh: "中文",
+    ja: "日本語",
+    ko: "한국어",
+    fr: "Français",
+    de: "Deutsch",
   };
 
   const sourceLanguage = languageNames[sourceLang] || sourceLang;
@@ -287,7 +374,7 @@ function buildPrompt(text: string, mode: TranslationMode, sourceLang: string, ta
   const targetLocal = targetLanguageLocal[targetLang] || targetLanguage;
 
   const modeInstructions: Record<TranslationMode, string> = {
-    professional: `Translate the following text from ${sourceLanguage} to ${targetLanguage}. 
+    professional: `Translate the following text from ${sourceLanguage} to ${targetLanguage}.
 Be precise and professional. Keep technical terms with original in parentheses.
 Output only the translation, nothing else.`,
     casual: `Translate from ${sourceLanguage} to ${targetLanguage} in a simple, easy-to-understand way.
@@ -303,4 +390,3 @@ ${text}
 
 ${targetLocal}:`;
 }
-
