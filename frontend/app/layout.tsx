@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/react";
 import { Toaster } from "react-hot-toast";
 import "flag-icons/css/flag-icons.min.css";
 import "./globals.css";
@@ -59,6 +60,7 @@ export default function RootLayout({
             },
           }}
         />
+        <Analytics />
       </body>
     </html>
   );
