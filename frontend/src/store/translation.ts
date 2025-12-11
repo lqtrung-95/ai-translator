@@ -250,6 +250,12 @@ export const useTranslationStore = create<TranslationState>()(
           // 持久化历史
           translationHistory: state.translationHistory,
         }),
+        // Auto-migrate old users from disabled providers to Groq
+        onRehydrateStorage: () => (state) => {
+          if (state && state.aiProvider !== 'groq') {
+            state.setAIProvider('groq');
+          }
+        },
       }
     )
   )

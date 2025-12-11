@@ -47,11 +47,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
 
   if (!isOpen) return null;
 
-  const providerInfo: Record<AIProvider, { status: string; statusColor: string }> = {
-    groq: { status: '已连接', statusColor: 'text-green-600' },
-    gemini: { status: '需要 API Key', statusColor: 'text-amber-600' },
-    claude: { status: '需要 API Key', statusColor: 'text-amber-600' },
-    openai: { status: '需要 API Key', statusColor: 'text-amber-600' },
+  const providerInfo: Record<AIProvider, { status: string; statusColor: string; disabled: boolean }> = {
+    groq: { status: '已连接', statusColor: 'text-green-600', disabled: false },
+    gemini: { status: '暂不可用', statusColor: 'text-gray-400', disabled: true },
+    claude: { status: '暂不可用', statusColor: 'text-gray-400', disabled: true },
+    openai: { status: '暂不可用', statusColor: 'text-gray-400', disabled: true },
   };
 
   return (
@@ -118,32 +118,38 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                 { id: 'gemini' as AIProvider, label: 'Google Gemini', desc: '性价比高' },
                 { id: 'claude' as AIProvider, label: 'Anthropic Claude', desc: '质量最优' },
                 { id: 'openai' as AIProvider, label: 'OpenAI GPT-4', desc: '企业首选' },
-              ].map((option) => (
-                <button
-                  key={option.id}
-                  onClick={() => setAIProvider(option.id)}
-                  className={`w-full flex items-center justify-between p-3 rounded-xl border-2 transition-all cursor-pointer ${
-                    aiProvider === option.id
-                      ? 'border-blue-500 bg-blue-500/10'
-                      : 'border-[var(--border)] hover:border-[var(--muted)]'
-                  }`}
-                >
-                  <div className="text-left">
-                    <div className="flex items-center gap-2">
-                      <p className={`font-medium ${aiProvider === option.id ? 'text-blue-600' : 'text-[var(--foreground)]'}`}>
-                        {option.label}
-                      </p>
-                      {aiProvider === option.id && (
-                        <Check size={16} className="text-blue-600" />
-                      )}
+              ].map((option) => {
+                const info = providerInfo[option.id];
+                return (
+                  <button
+                    key={option.id}
+                    onClick={() => !info.disabled && setAIProvider(option.id)}
+                    disabled={info.disabled}
+                    className={`w-full flex items-center justify-between p-3 rounded-xl border-2 transition-all ${
+                      info.disabled
+                        ? 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-50'
+                        : aiProvider === option.id
+                          ? 'border-blue-500 bg-blue-500/10 cursor-pointer'
+                          : 'border-[var(--border)] hover:border-[var(--muted)] cursor-pointer'
+                    }`}
+                  >
+                    <div className="text-left">
+                      <div className="flex items-center gap-2">
+                        <p className={`font-medium ${info.disabled ? 'text-gray-400' : aiProvider === option.id ? 'text-blue-600' : 'text-[var(--foreground)]'}`}>
+                          {option.label}
+                        </p>
+                        {aiProvider === option.id && !info.disabled && (
+                          <Check size={16} className="text-blue-600" />
+                        )}
+                      </div>
+                      <p className={`text-xs ${info.disabled ? 'text-gray-400' : 'text-[var(--muted)]'}`}>{option.desc}</p>
                     </div>
-                    <p className="text-xs text-[var(--muted)]">{option.desc}</p>
-                  </div>
-                  <span className={`text-xs font-medium ${providerInfo[option.id].statusColor}`}>
-                    {providerInfo[option.id].status}
-                  </span>
-                </button>
-              ))}
+                    <span className={`text-xs font-medium ${info.statusColor}`}>
+                      {info.status}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
             <p className="mt-2 text-xs text-[var(--muted)]">
               当前选择: <span className="font-medium text-blue-600">{aiProvider.toUpperCase()}</span> - 翻译时将使用此引擎
