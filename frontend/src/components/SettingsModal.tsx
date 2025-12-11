@@ -48,7 +48,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
   if (!isOpen) return null;
 
   const providerInfo: Record<AIProvider, { status: string; statusColor: string }> = {
-    gemini: { status: '已连接', statusColor: 'text-green-600' },
+    groq: { status: '已连接', statusColor: 'text-green-600' },
+    gemini: { status: '需要 API Key', statusColor: 'text-amber-600' },
     claude: { status: '需要 API Key', statusColor: 'text-amber-600' },
     openai: { status: '需要 API Key', statusColor: 'text-amber-600' },
   };
@@ -113,7 +114,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
             </label>
             <div className="space-y-2">
               {[
-                { id: 'gemini' as AIProvider, label: 'Google Gemini', desc: '推荐 · 性价比最高' },
+                { id: 'groq' as AIProvider, label: 'Groq (Llama 3.3)', desc: '推荐 · 免费额度最高' },
+                { id: 'gemini' as AIProvider, label: 'Google Gemini', desc: '性价比高' },
                 { id: 'claude' as AIProvider, label: 'Anthropic Claude', desc: '质量最优' },
                 { id: 'openai' as AIProvider, label: 'OpenAI GPT-4', desc: '企业首选' },
               ].map((option) => (

@@ -155,7 +155,7 @@ export const InstantTranslator = () => {
       setLastQuickResult({
         translated: data.translated,
         confidence: data.confidence,
-        provider: (data.provider || aiProvider) as 'gemini' | 'claude' | 'openai',
+        provider: (data.provider || aiProvider) as 'groq' | 'gemini' | 'claude' | 'openai',
       });
       // Add to history
       addToHistory({
@@ -202,7 +202,7 @@ export const InstantTranslator = () => {
         </p>
         <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-[var(--surface)] border border-[var(--border)] rounded-full text-xs text-[var(--muted)]">
           <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-          引擎: {aiProvider === 'gemini' ? 'Google Gemini' : aiProvider === 'claude' ? 'Claude' : 'GPT-4'}
+          引擎: {aiProvider === 'groq' ? 'Groq Llama' : aiProvider === 'gemini' ? 'Gemini' : aiProvider === 'claude' ? 'Claude' : 'GPT-4'}
         </div>
       </div>
 

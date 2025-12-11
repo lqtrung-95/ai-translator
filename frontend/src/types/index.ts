@@ -102,7 +102,7 @@ export interface TranslationResponse {
 export interface InstantTranslationResult {
   translated: string;
   confidence: number;
-  provider: 'gemini' | 'claude' | 'openai';
+  provider: 'groq' | 'gemini' | 'claude' | 'openai';
 }
 
 // UI相关类型

@@ -91,7 +91,7 @@ export class ApiClient {
     id: string,
     options: {
       mode?: 'professional' | 'casual' | 'summary';
-      provider?: 'gemini' | 'claude' | 'openai';
+      provider?: 'groq' | 'gemini' | 'claude' | 'openai';
     } = {}
   ) {
     return this.client.post(`/translations/${id}/translate`, options);
@@ -100,7 +100,7 @@ export class ApiClient {
   async instantTranslate(data: {
     text: string;
     mode?: 'professional' | 'casual' | 'summary';
-    provider?: 'gemini' | 'claude' | 'openai';
+    provider?: 'groq' | 'gemini' | 'claude' | 'openai';
     sourceLanguage?: string;
     targetLanguage?: string;
     context?: string;
@@ -117,7 +117,7 @@ export class ApiClient {
     sourceLanguage?: string;
     targetLanguage?: string;
     mode?: 'professional' | 'casual' | 'summary';
-    provider?: 'gemini' | 'claude' | 'openai';
+    provider?: 'groq' | 'gemini' | 'claude' | 'openai';
   }) {
     return this.client.post('/document-translate', data);
   }

@@ -10,7 +10,7 @@ import {
 } from '@/types';
 
 export type Theme = 'light' | 'dark' | 'system';
-export type AIProvider = 'gemini' | 'claude' | 'openai';
+export type AIProvider = 'groq' | 'gemini' | 'claude' | 'openai';
 
 export interface TranslationHistoryItem {
   id: string;
@@ -133,7 +133,7 @@ const initialState = {
   translationHistory: [],
   // 设置默认值
   theme: 'system' as Theme,
-  aiProvider: 'gemini' as AIProvider,
+  aiProvider: 'groq' as AIProvider,
   autoDetectLanguage: true,
   saveHistory: true,
 };

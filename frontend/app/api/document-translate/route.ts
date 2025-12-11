@@ -14,7 +14,7 @@ interface DocumentTranslateRequest {
   sourceLanguage?: string;
   targetLanguage?: string;
   mode?: TranslationMode;
-  provider?: "gemini" | "claude" | "openai";
+  provider?: "groq" | "gemini" | "claude" | "openai";
 }
 
 interface TranslatedDocument extends ParsedDocument {
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
       sourceLanguage = "en",
       targetLanguage = "zh",
       mode = "professional",
-      provider = "gemini",
+      provider = "groq",
     } = body;
 
     if (!content) {
@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Translate all paragraphs with batching
+// Translate all paragraphs with batching (multiple paragraphs per API call)
 async function translateParagraphs(
   paragraphs: ParsedParagraph[],
   sourceLanguage: string,
@@ -136,257 +136,253 @@ async function translateParagraphs(
   mode: TranslationMode,
   provider: string
 ): Promise<ParsedParagraph[]> {
-  const results: ParsedParagraph[] = [];
+  // Separate code blocks (no translation needed) from text
+  const textParagraphs: ParsedParagraph[] = [];
+  const codeParagraphs: Map<number, ParsedParagraph> = new Map();
+  
+  paragraphs.forEach((p, idx) => {
+    if (p.type === "code") {
+      codeParagraphs.set(idx, { ...p, translated: p.original, translationStatus: "completed" as const });
+    } else {
+      textParagraphs.push(p);
+    }
+  });
 
-  // Process in batches of 10 for faster performance
+  // Batch 10 paragraphs per API call to minimize requests
   const batchSize = 10;
+  const translatedTexts: Map<string, string> = new Map();
 
-  for (let i = 0; i < paragraphs.length; i += batchSize) {
-    const batch = paragraphs.slice(i, i + batchSize);
-
-    const batchResults = await Promise.all(
-      batch.map(async (paragraph) => {
-        // Skip code blocks - just mark as completed
-        if (paragraph.type === "code") {
-          return {
-            ...paragraph,
-            translated: paragraph.original,
-            translationStatus: "completed" as const,
-          };
-        }
-
-        try {
-          const translated = await translateText(
-            paragraph.original,
-            sourceLanguage,
-            targetLanguage,
-            mode,
-            provider
-          );
-
-          return {
-            ...paragraph,
-            translated,
-            translationStatus: "completed" as const,
-          };
-        } catch (error) {
-          console.error(
-            `Failed to translate paragraph ${paragraph.id}:`,
-            error
-          );
-          return {
-            ...paragraph,
-            translated: `[Translation failed] ${paragraph.original}`,
-            translationStatus: "error" as const,
-          };
-        }
-      })
-    );
-
-    results.push(...batchResults);
+  for (let i = 0; i < textParagraphs.length; i += batchSize) {
+    const batch = textParagraphs.slice(i, i + batchSize);
+    console.log(`Translating batch ${Math.floor(i / batchSize) + 1}: ${batch.length} paragraphs`);
+    
+    try {
+      const translations = await translateBatch(
+        batch.map(p => p.original),
+        sourceLanguage,
+        targetLanguage,
+        mode,
+        provider
+      );
+      
+      batch.forEach((p, idx) => {
+        translatedTexts.set(p.id, translations[idx] || `[Translation failed] ${p.original}`);
+      });
+    } catch (error) {
+      console.error(`Batch translation failed:`, error);
+      batch.forEach(p => {
+        translatedTexts.set(p.id, `[Translation failed] ${p.original}`);
+      });
+    }
+    
+    // Small delay between batches to be safe
+    if (i + batchSize < textParagraphs.length) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
   }
 
-  return results;
+  // Rebuild results in original order
+  return paragraphs.map((p, idx) => {
+    if (codeParagraphs.has(idx)) {
+      return codeParagraphs.get(idx)!;
+    }
+    const translated = translatedTexts.get(p.id);
+    return {
+      ...p,
+      translated: translated || p.original,
+      translationStatus: (translated && !translated.startsWith("[Translation failed]") ? "completed" : "error") as "completed" | "error",
+    };
+  });
 }
 
-// Translate a single text
-async function translateText(
-  text: string,
+// Translate multiple texts in a single API call
+async function translateBatch(
+  texts: string[],
   sourceLanguage: string,
   targetLanguage: string,
   mode: TranslationMode,
   provider: string
-): Promise<string> {
-  const prompt = buildPrompt(text, mode, sourceLanguage, targetLanguage);
+): Promise<string[]> {
+  const prompt = buildBatchPrompt(texts, mode, sourceLanguage, targetLanguage);
+  
+  // Groq - Best free tier: 30 RPM, 14,400 RPD
+  const groqKey = process.env.GROQ_API_KEY;
+  if (provider === "groq" && groqKey && !groqKey.startsWith("your-")) {
+    console.log(`Translating with Groq: ${texts.length} texts`);
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${groqKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "llama-3.3-70b-versatile",
+        messages: [
+          { role: "system", content: "You are a professional translator. Follow the output format exactly." },
+          { role: "user", content: prompt },
+        ],
+        temperature: 0.3,
+        max_tokens: 8192,
+      }),
+    });
 
-  // Try Gemini
-  const geminiKey = process.env.GEMINI_API_KEY;
-  if (provider === "gemini" && geminiKey && !geminiKey.startsWith("your-")) {
-    try {
-      console.log(`Translating with Gemini: ${text.substring(0, 50)}...`);
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${geminiKey}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.3, maxOutputTokens: 2048 },
-            safetySettings: [
-              {
-                category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                threshold: "BLOCK_NONE",
-              },
-              {
-                category: "HARM_CATEGORY_HATE_SPEECH",
-                threshold: "BLOCK_NONE",
-              },
-              { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
-              {
-                category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-                threshold: "BLOCK_NONE",
-              },
-            ],
-          }),
-        }
-      );
-
-      if (!res.ok) {
-        const errorText = await res.text();
-        console.error(`Gemini API error: ${res.status} - ${errorText}`);
-        throw new Error(`Gemini API error: ${res.status}`);
-      }
-
-      const data = await res.json();
-      console.log("Gemini response:", JSON.stringify(data).substring(0, 200));
-
-      const translated =
-        data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-      if (translated) {
-        return translated;
-      } else {
-        console.error("Gemini response missing translation:", data);
-        throw new Error("Gemini response missing translation content");
-      }
-    } catch (e) {
-      console.error("Gemini error:", e);
-      throw e;
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error(`Groq API error: ${res.status} - ${errorText}`);
+      throw new Error(`Groq API error: ${res.status}`);
     }
+
+    const data = await res.json();
+    const responseText = data.choices?.[0]?.message?.content?.trim();
+    if (!responseText) throw new Error("Empty response from Groq");
+    
+    return parseBatchResponse(responseText, texts.length);
   }
 
-  // Try Claude
+  // // Gemini fallback (commented out for testing Groq)
+  // const geminiKey = process.env.GEMINI_API_KEY;
+  // if (provider === "gemini" && geminiKey && !geminiKey.startsWith("your-")) {
+  //   const res = await fetch(
+  //     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
+  //     {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify({
+  //         contents: [{ parts: [{ text: prompt }] }],
+  //         generationConfig: { temperature: 0.3, maxOutputTokens: 8192 },
+  //         safetySettings: [
+  //           { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+  //           { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+  //           { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+  //           { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" },
+  //         ],
+  //       }),
+  //     }
+  //   );
+
+  //   if (!res.ok) {
+  //     const errorText = await res.text();
+  //     console.error(`Gemini API error: ${res.status} - ${errorText}`);
+  //     throw new Error(`Gemini API error: ${res.status}`);
+  //   }
+
+  //   const data = await res.json();
+  //   const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+  //   if (!responseText) throw new Error("Empty response from Gemini");
+  //   
+  //   return parseBatchResponse(responseText, texts.length);
+  // }
+
+  // Claude fallback
   const claudeKey = process.env.CLAUDE_API_KEY;
   if (provider === "claude" && claudeKey && !claudeKey.startsWith("your-")) {
-    try {
-      console.log(`Translating with Claude: ${text.substring(0, 50)}...`);
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "x-api-key": claudeKey,
-          "anthropic-version": "2023-06-01",
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "claude-3-5-sonnet-20241022",
-          max_tokens: 2048,
-          messages: [{ role: "user", content: prompt }],
-        }),
-      });
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": claudeKey,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "claude-3-5-sonnet-20241022",
+        max_tokens: 8192,
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
 
-      if (!res.ok) {
-        const errorText = await res.text();
-        console.error(`Claude API error: ${res.status} - ${errorText}`);
-        throw new Error(`Claude API error: ${res.status}`);
-      }
-
-      const data = await res.json();
-      const translated = data.content?.[0]?.text?.trim();
-      if (translated) {
-        return translated;
-      } else {
-        console.error("Claude response missing translation:", data);
-        throw new Error("Claude response missing translation content");
-      }
-    } catch (e) {
-      console.error("Claude error:", e);
-      throw e;
-    }
+    if (!res.ok) throw new Error(`Claude API error: ${res.status}`);
+    const data = await res.json();
+    const responseText = data.content?.[0]?.text?.trim();
+    if (!responseText) throw new Error("Empty response from Claude");
+    
+    return parseBatchResponse(responseText, texts.length);
   }
 
-  // Try OpenAI
+  // OpenAI fallback
   const openaiKey = process.env.OPENAI_API_KEY;
   if (provider === "openai" && openaiKey && !openaiKey.startsWith("your-")) {
-    try {
-      console.log(`Translating with OpenAI: ${text.substring(0, 50)}...`);
-      const res = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${openaiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "gpt-4",
-          messages: [
-            {
-              role: "system",
-              content:
-                "You are a professional technical translator. Translate accurately and preserve formatting.",
-            },
-            { role: "user", content: prompt },
-          ],
-          temperature: 0.3,
-          max_tokens: 2048,
-        }),
-      });
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${openaiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "gpt-4",
+        messages: [
+          { role: "system", content: "You are a professional translator. Follow the format exactly." },
+          { role: "user", content: prompt },
+        ],
+        temperature: 0.3,
+        max_tokens: 8192,
+      }),
+    });
 
-      if (!res.ok) {
-        const errorText = await res.text();
-        console.error(`OpenAI API error: ${res.status} - ${errorText}`);
-        throw new Error(`OpenAI API error: ${res.status}`);
-      }
-
-      const data = await res.json();
-      const translated = data.choices?.[0]?.message?.content?.trim();
-      if (translated) {
-        return translated;
-      } else {
-        console.error("OpenAI response missing translation:", data);
-        throw new Error("OpenAI response missing translation content");
-      }
-    } catch (e) {
-      console.error("OpenAI error:", e);
-      throw e;
-    }
+    if (!res.ok) throw new Error(`OpenAI API error: ${res.status}`);
+    const data = await res.json();
+    const responseText = data.choices?.[0]?.message?.content?.trim();
+    if (!responseText) throw new Error("Empty response from OpenAI");
+    
+    return parseBatchResponse(responseText, texts.length);
   }
 
-  // No provider available or configured
-  throw new Error(
-    `Translation provider '${provider}' is not configured. Please check your API keys in environment variables.`
-  );
+  throw new Error(`Translation provider '${provider}' is not configured.`);
 }
 
-function buildPrompt(
-  text: string,
+// Build prompt for batch translation
+function buildBatchPrompt(
+  texts: string[],
   mode: TranslationMode,
   sourceLang: string,
   targetLang: string
 ): string {
   const languageNames: Record<string, string> = {
-    en: "English",
-    zh: "Chinese",
-    ja: "Japanese",
-    ko: "Korean",
-    fr: "French",
-    de: "German",
-  };
-
-  const targetLanguageLocal: Record<string, string> = {
-    en: "English",
-    zh: "中文",
-    ja: "日本語",
-    ko: "한국어",
-    fr: "Français",
-    de: "Deutsch",
+    en: "English", zh: "Chinese", ja: "Japanese", ko: "Korean", fr: "French", de: "German",
   };
 
   const sourceLanguage = languageNames[sourceLang] || sourceLang;
   const targetLanguage = languageNames[targetLang] || targetLang;
-  const targetLocal = targetLanguageLocal[targetLang] || targetLanguage;
 
   const modeInstructions: Record<TranslationMode, string> = {
-    professional: `Translate the following text from ${sourceLanguage} to ${targetLanguage}.
-Be precise and professional. Keep technical terms with original in parentheses.
-Output only the translation, nothing else.`,
-    casual: `Translate from ${sourceLanguage} to ${targetLanguage} in a simple, easy-to-understand way.
-Explain technical concepts briefly. Output only the translation.`,
-    summary: `Summarize and translate from ${sourceLanguage} to ${targetLanguage}.
-Keep only key points. Output only the summary.`,
+    professional: "Be precise and professional. Keep technical terms with original in parentheses.",
+    casual: "Use simple, easy-to-understand language.",
+    summary: "Summarize while translating, keep only key points.",
   };
 
-  return `${modeInstructions[mode]}
+  const numberedTexts = texts.map((t, i) => `[${i + 1}] ${t}`).join("\n\n");
 
-Text:
-${text}
+  return `Translate the following ${texts.length} texts from ${sourceLanguage} to ${targetLanguage}.
+${modeInstructions[mode]}
 
-${targetLocal}:`;
+IMPORTANT: Output ONLY the translations in the exact same numbered format [1], [2], etc.
+Do not add any explanations or extra text.
+
+${numberedTexts}
+
+Translations:`;
 }
+
+// Parse batch response back into individual translations
+function parseBatchResponse(response: string, expectedCount: number): string[] {
+  const results: string[] = [];
+  
+  // Try to parse numbered format [1], [2], etc.
+  for (let i = 1; i <= expectedCount; i++) {
+    const pattern = new RegExp(`\\[${i}\\]\\s*([\\s\\S]*?)(?=\\[${i + 1}\\]|$)`, 'i');
+    const match = response.match(pattern);
+    if (match && match[1]) {
+      results.push(match[1].trim());
+    } else {
+      // Fallback: split by double newlines if numbered format fails
+      const parts = response.split(/\n\n+/);
+      if (parts[i - 1]) {
+        results.push(parts[i - 1].replace(/^\[\d+\]\s*/, '').trim());
+      } else {
+        results.push('');
+      }
+    }
+  }
+  
+  return results;
+}
+

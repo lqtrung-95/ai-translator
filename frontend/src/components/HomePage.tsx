@@ -131,7 +131,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onTranslationStart, isLoadin
                   支持 AWS、GCP、OCI、Kubernetes 等云服务官方文档
                 </p>
                 <p className="mt-1 text-xs text-amber-600">
-                  💡 请输入具体文档页面链接，例如：docs.aws.amazon.com/lambda/latest/dg/welcome.html
+                  💡 请输入具体文档页面链接，例如：https://docs.aws.amazon.com/lambda/latest/dg/welcome.html
                 </p>
               </div>
 
