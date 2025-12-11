@@ -6,7 +6,7 @@ type TranslationMode = 'professional' | 'casual' | 'summary';
 interface TranslationRequest {
   text: string;
   mode?: TranslationMode;
-  provider?: 'gemini' | 'claude' | 'openai';
+  provider?: 'groq' | 'gemini' | 'claude' | 'openai';
   sourceLanguage?: string;
   targetLanguage?: string;
   context?: string;
@@ -47,7 +47,7 @@ const fallbackGlossaryTerms: GlossaryTerm[] = [
 export async function POST(request: NextRequest) {
   try {
     const body: TranslationRequest = await request.json();
-    const { text, mode = 'professional', provider = 'gemini', sourceLanguage = 'en', targetLanguage = 'zh', context } = body;
+    const { text, mode = 'professional', provider = 'groq', sourceLanguage = 'en', targetLanguage = 'zh', context } = body;
 
     if (!text) {
       return NextResponse.json({ error: 'Text is required' }, { status: 400 });
@@ -111,13 +111,43 @@ async function translate(opts: {
   const { text, mode, provider, sourceLanguage, targetLanguage, context, glossary } = opts;
 
   // Check for API keys
+  const groqKey = process.env.GROQ_API_KEY;
   const geminiKey = process.env.GEMINI_API_KEY;
   const claudeKey = process.env.CLAUDE_API_KEY;
   const openaiKey = process.env.OPENAI_API_KEY;
 
   const prompt = buildPrompt(text, mode, sourceLanguage, targetLanguage, context);
 
-  // Try Gemini (same as backend: gemini-2.5-flash)
+  // Try Groq (Best free tier: 30 RPM)
+  if (provider === 'groq' && groqKey && !groqKey.startsWith('your-')) {
+    try {
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${groqKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          messages: [
+            { role: 'system', content: 'You are a professional translator. Output only the translation, nothing else.' },
+            { role: 'user', content: prompt },
+          ],
+          temperature: 0.3,
+          max_tokens: 2048,
+        }),
+      });
+      const data = await res.json();
+      const translated = data.choices?.[0]?.message?.content?.trim();
+      if (translated) {
+        return { translated, confidence: 0.94, provider: 'groq' };
+      }
+    } catch (e) {
+      console.error('Groq error:', e);
+    }
+  }
+
+  // Try Gemini
   if (provider === 'gemini' && geminiKey && !geminiKey.startsWith('your-')) {
     try {
       const res = await fetch(
