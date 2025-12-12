@@ -111,6 +111,15 @@ export class ApiClient {
     );
   }
 
+  async imageTranslate(data: {
+    image: string; // Base64 encoded image
+    sourceLanguage?: string;
+    targetLanguage?: string;
+    mode?: 'professional' | 'casual' | 'summary';
+  }) {
+    return this.client.post('/image-translate', data);
+  }
+
   async documentTranslate(data: {
     type: 'url' | 'content';
     content: string;
