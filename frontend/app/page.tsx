@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { BookOpen, MessageCircle, Settings, Languages, FileText, ArrowLeft, Sparkles, History } from 'lucide-react';
+import { BookOpen, MessageCircle, Settings, Languages, FileText, ArrowLeft, Sparkles, History, Moon, Sun } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { InstantTranslator } from '@/components/InstantTranslator';
 import { HomePage } from '@/components/HomePage';
@@ -247,7 +247,20 @@ export default function Home() {
                 <MessageCircle size={20} className="lg:w-[18px] lg:h-[18px]" />
                 <span className="hidden lg:inline text-sm font-medium">AI助手</span>
               </button>
-              {/* Settings button */}
+              {/* Theme toggle button */}
+              <button
+                onClick={() => {
+                  const { theme, setTheme } = useTranslationStore.getState();
+                  const newTheme = theme === 'dark' ? 'light' : 'dark';
+                  setTheme(newTheme);
+                  applyTheme(newTheme);
+                }}
+                className="p-2 rounded-xl text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--background)] transition-all duration-200 cursor-pointer"
+                title={theme === 'dark' ? '切换浅色模式' : '切换深色模式'}
+              >
+                {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+              </button>
+              {/* Settings button (commented out temporarily)
               <button
                 onClick={() => setShowSettings(true)}
                 className="p-2 rounded-xl text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--background)] transition-all duration-200 cursor-pointer"
@@ -255,6 +268,7 @@ export default function Home() {
               >
                 <Settings size={20} />
               </button>
+              */}
             </div>
           </div>
         </div>
