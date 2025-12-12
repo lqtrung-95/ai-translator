@@ -200,10 +200,10 @@ export const InstantTranslator = () => {
         <p className="text-[var(--muted)] text-sm sm:text-base">
           专为云服务文档优化，支持 AWS、GCP、OCI 等技术术语
         </p>
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-[var(--surface)] border border-[var(--border)] rounded-full text-xs text-[var(--muted)]">
+        {/* <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-[var(--surface)] border border-[var(--border)] rounded-full text-xs text-[var(--muted)]">
           <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
           引擎: {aiProvider === 'groq' ? 'Groq Llama' : aiProvider === 'gemini' ? 'Gemini' : aiProvider === 'claude' ? 'Claude' : 'GPT-4'}
-        </div>
+        </div> */}
       </div>
 
       {/* Translation Card */}
