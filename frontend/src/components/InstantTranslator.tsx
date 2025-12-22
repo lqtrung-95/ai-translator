@@ -628,7 +628,7 @@ export const InstantTranslator = () => {
               <div className="h-[300px] overflow-auto">
                 <div className="markdown-body text-[var(--foreground)] text-base leading-relaxed">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {imageTranslation}
+                    {imageTranslation.split('\n').join('\n\n')}
                   </ReactMarkdown>
                 </div>
               </div>
