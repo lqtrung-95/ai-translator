@@ -18,6 +18,8 @@ const languages: Record<string, string> = {
   ko: '한',
   fr: 'FR',
   de: 'DE',
+  ru: 'RU',
+  es: 'ES',
 };
 
 const modeLabels: Record<string, string> = {

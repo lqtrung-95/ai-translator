@@ -14,6 +14,8 @@ const languages = [
   { code: 'ko', label: '한국어', flag: 'kr' },
   { code: 'fr', label: 'Français', flag: 'fr' },
   { code: 'de', label: 'Deutsch', flag: 'de' },
+  { code: 'ru', label: 'Русский', flag: 'ru' },
+  { code: 'es', label: 'Español', flag: 'es' },
 ];
 
 // Custom Language Selector with flags
