@@ -337,7 +337,7 @@ function buildBatchPrompt(
   targetLang: string
 ): string {
   const languageNames: Record<string, string> = {
-    en: "English", zh: "Chinese", ja: "Japanese", ko: "Korean", fr: "French", de: "German",
+    en: "English", zh: "Simplified Chinese (简体中文)", ja: "Japanese", ko: "Korean", fr: "French", de: "German", ru: "Russian", es: "Spanish",
   };
 
   const sourceLanguage = languageNames[sourceLang] || sourceLang;

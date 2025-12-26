@@ -28,11 +28,13 @@ export async function POST(request: NextRequest) {
 
     const languageNames: Record<string, string> = {
       en: 'English',
-      zh: 'Chinese',
+      zh: 'Simplified Chinese (简体中文)',
       ja: 'Japanese',
       ko: 'Korean',
       fr: 'French',
       de: 'German',
+      ru: 'Russian',
+      es: 'Spanish',
       vi: 'Vietnamese',
       auto: 'the original language',
     };

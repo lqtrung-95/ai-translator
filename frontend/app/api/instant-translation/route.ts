@@ -240,11 +240,13 @@ async function translate(opts: {
 function buildPrompt(text: string, mode: TranslationMode, sourceLang: string, targetLang: string, context: string): string {
   const languageNames: Record<string, string> = {
     en: 'English',
-    zh: 'Chinese',
+    zh: 'Simplified Chinese (简体中文)',
     ja: 'Japanese',
     ko: 'Korean',
     fr: 'French',
     de: 'German',
+    ru: 'Russian',
+    es: 'Spanish',
   };
 
   const targetLanguageLocal: Record<string, string> = {
