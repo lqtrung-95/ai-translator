@@ -464,7 +464,7 @@ export const InstantTranslator = () => {
                 {quickTranslatedText ? (
                   <div className="markdown-body text-[var(--foreground)] text-base leading-relaxed">
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {quickTranslatedText}
+                      {quickTranslatedText.split('\n').join('\n\n')}
                     </ReactMarkdown>
                   </div>
                 ) : (
