@@ -8,6 +8,10 @@ export const metadata: Metadata = {
   title: "CloudTranslate - AI 云文档翻译平台",
   description: "专为云服务文档优化的 AI 翻译平台，支持 AWS、GCP、Azure 等技术术语的精准翻译",
   keywords: ["翻译", "云服务", "AWS", "文档", "AI", "技术翻译"],
+  icons: {
+    icon: "/icon.svg",
+    apple: "/icon.svg",
+  },
 };
 
 export default function RootLayout({
